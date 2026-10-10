@@ -1,0 +1,7 @@
+# PostgreSQL
+# ------------------------------------------------------------------------------
+POSTGRES_HOST=postgres
+POSTGRES_PORT=5432
+POSTGRES_DB=estuairefleet
+POSTGRES_USER=jOGNYjpqgESUuvwylLlJvctnDdAxnFCI
+POSTGRES_PASSWORD=nYoUJ2LgCKiRYnc9FfxBW6GZd30cN9f0k9kbw7vDn21ydUPb362X8TTKPw6KjW5N

@@ -1,0 +1,38 @@
+:root {
+  --insam-red: #c8102e;
+  --insam-red-dark: #9b0c24;
+  --insam-red-bright: #ef1740;
+  --insam-white: #fff;
+  --insam-black: #0d0d0d;
+  --insam-text: #1a1a1a;
+  --insam-muted: #667085;
+  --insam-bg: #f8f8f8;
+  --insam-border: #e5e5e5;
+  --insam-success: #2f855a;
+  --insam-warning: #dd6b20;
+  --insam-danger: #b42318;
+  --radius-sm: .375rem;
+  --radius-lg: 1rem;
+  --shadow-card: 0 10px 30px rgb(13 13 13 / 8%);
+}
+
+body { background: var(--insam-bg); color: var(--insam-text); }
+.insam-navbar { background: var(--insam-white); border-bottom: 4px solid var(--insam-red); }
+.insam-brand { color: var(--insam-red-dark); font-weight: 800; letter-spacing: -.02em; }
+.insam-brand:hover { color: var(--insam-red); }
+.insam-container { max-width: 1160px; }
+.insam-card { background: var(--insam-white); border: 1px solid var(--insam-border); border-radius: var(--radius-lg); box-shadow: var(--shadow-card); }
+.btn-insam { background: var(--insam-red); border-color: var(--insam-red); color: var(--insam-white); }
+.btn-insam:hover, .btn-insam:focus { background: var(--insam-red-dark); border-color: var(--insam-red-dark); color: var(--insam-white); }
+.btn-outline-insam { border-color: var(--insam-red); color: var(--insam-red); }
+.btn-outline-insam:hover { background: var(--insam-red); color: var(--insam-white); }
+.text-insam { color: var(--insam-red); }
+.bg-insam { background: var(--insam-red); color: var(--insam-white); }
+.badge-success-soft { background: #e6f4ed; color: var(--insam-success); }
+.badge-warning-soft { background: #fff3e8; color: var(--insam-warning); }
+.alert-priority { border-left: .4rem solid var(--insam-red-bright); background: #fff1f3; }
+.signal-button { min-height: 5rem; font-size: 1.15rem; font-weight: 700; }
+.signal-dot { display: inline-block; width: 1rem; height: 1rem; background: var(--insam-red-bright); border: 3px solid var(--insam-white); border-radius: 50%; box-shadow: 0 0 0 3px var(--insam-red); }
+.map-placeholder { min-height: 320px; border-radius: var(--radius-lg); background: #e9eef2; border: 1px solid var(--insam-border); }
+.form-control:focus, .form-select:focus { border-color: var(--insam-red); box-shadow: 0 0 0 .2rem rgb(200 16 46 / 15%); }
+@media (max-width: 576px) { .signal-button { width: 100%; } .insam-card { border-radius: .75rem; } }

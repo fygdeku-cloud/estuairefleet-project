@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}Signaler ma position — EstuaireFleet{% endblock %}
+{% block content %}
+  <div class="row g-4">
+    <div class="col-lg-5">
+      <div class="insam-card p-4">
+        <p class="text-insam fw-semibold mb-2">Signal de localisation</p>
+        <h1 class="h3">Prévenir le chauffeur</h1>
+        <p class="text-secondary">Un clic envoie votre position au trajet sélectionné. Le signal reste actif pendant la durée du trajet.</p>
+        <form method="post">
+          {% csrf_token %}
+          {{ form.non_field_errors }}
+          <div class="mb-3">{{ form.route.label_tag }}{{ form.route }}</div>
+          <input type="hidden" name="position_lat" id="id_position_lat">
+          <input type="hidden" name="position_lng" id="id_position_lng">
+          <button type="submit" class="btn btn-insam signal-button w-100" data-locate><span class="signal-dot me-2"></span>Signaler ma position</button>
+          <p class="small text-secondary mt-3 mb-0" data-location-status>La position n'est transmise qu'après votre action.</p>
+        </form>
+      </div>
+    </div>
+    <div class="col-lg-7">
+      <div class="map-placeholder d-flex align-items-center justify-content-center text-secondary">
+        <div class="text-center"><span class="signal-dot mb-3"></span><p class="mb-0">Carte Leaflet prête à recevoir les données du trajet.</p></div>
+      </div>
+    </div>
+  </div>
+{% endblock %}

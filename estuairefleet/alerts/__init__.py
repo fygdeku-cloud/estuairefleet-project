@@ -1,0 +1,1 @@
+"""Priority alert domain."""

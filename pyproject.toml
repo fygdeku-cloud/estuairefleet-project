@@ -1,0 +1,66 @@
+[project]
+name = "estuairefleet"
+version = "0.1.0"
+description = "Plateforme de gestion du transport étudiant INSAM"
+readme = "README.md"
+requires-python = ">=3.12,<3.15"
+dependencies = [
+  "argon2-cffi>=23.1",
+  "celery>=5.4",
+  "crispy-bootstrap5>=2024.10",
+  "django>=5.2,<6.1",
+  "django-allauth[mfa]>=65.0",
+  "django-celery-beat>=2.7",
+  "django-cors-headers>=4.4",
+  "django-crispy-forms>=2.3",
+  "django-environ>=0.11",
+  "django-redis>=5.4",
+  "djangorestframework>=3.15",
+  "drf-spectacular>=0.27",
+  "gunicorn>=22.0",
+  "hiredis>=2.3",
+  "psycopg[binary]>=3.2",
+  "redis>=5.0",
+  "whitenoise>=6.7",
+]
+
+[dependency-groups]
+dev = [
+  "coverage>=7.6",
+  "django-debug-toolbar>=4.4",
+  "django-extensions>=3.2",
+  "djlint>=1.34",
+  "factory-boy>=3.3",
+  "mypy>=1.13",
+  "pre-commit>=3.8",
+  "pytest>=8.3",
+  "pytest-django>=4.9",
+  "ruff>=0.8",
+  "sphinx>=8.1",
+]
+
+[tool.ruff]
+target-version = "py312"
+line-length = 119
+extend-exclude = ["*/migrations/*.py", "staticfiles/*"]
+
+[tool.ruff.lint]
+select = ["A", "B", "C4", "DJ", "E", "F", "I", "N", "PIE", "PL", "RET", "RUF", "SIM", "UP", "W"]
+ignore = ["DJ001", "RUF012"]
+
+[tool.ruff.lint.per-file-ignores]
+"config/settings/*.py" = ["F403", "F405"]
+"manage.py" = ["PLC0415", "EM101", "RUF100"]
+"docs/conf.py" = ["RUF100"]
+
+[tool.pytest.ini_options]
+DJANGO_SETTINGS_MODULE = "config.settings.test"
+python_files = ["tests.py", "test_*.py"]
+addopts = "--reuse-db"
+
+[tool.coverage.run]
+include = ["estuairefleet/**"]
+omit = ["*/migrations/*", "*/tests/*"]
+
+[tool.django-stubs]
+django_settings_module = "config.settings.test"
