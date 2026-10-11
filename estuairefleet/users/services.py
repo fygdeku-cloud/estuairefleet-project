@@ -2,13 +2,15 @@ import secrets
 import string
 from datetime import timedelta
 
-from django.contrib.auth.hashers import make_password
+from django.conf import settings
+from django.contrib.auth.hashers import check_password, make_password
+from django.core.mail import send_mail
 from django.db import transaction
 from django.utils import timezone
 
 from estuairefleet.core import conf
 
-from .models import Administrateur, Chauffeur, Personnel, Student, User, UserRole
+from .models import Administrateur, Chauffeur, OTPChallenge, OTPPurpose, Personnel, Student, User, UserRole
 
 
 def _temporary_password(length=12):
@@ -110,3 +112,80 @@ def lift_suspension(*, student, by=None):
     student.signals_suspended_until = None
     student.save(update_fields=["signals_suspended_until", "updated_at"])
     return student
+
+
+@transaction.atomic
+def register_public_user(*, role, email, matricule, first_name, last_name, password="", password_hash=None, licence_number=""):
+    """Crée un compte public et le profil correspondant en une opération."""
+    user = User.objects.create(
+        email=email,
+        password=password_hash or make_password(password),
+        matricule=matricule or None,
+        first_name=first_name,
+        last_name=last_name,
+        role=role,
+        must_change_password=False,
+    )
+    if role == UserRole.STUDENT:
+        Student.objects.create(user=user, matricule=matricule)
+    elif role == UserRole.DRIVER:
+        Chauffeur.objects.create(user=user, licence_number=licence_number)
+    else:
+        raise ValueError("Ce rôle ne peut pas être créé par inscription publique.")
+    return user
+
+
+@transaction.atomic
+def register_student(*, email, matricule, first_name, last_name, password):
+    """Compatibilité pour créer un compte étudiant depuis un service interne."""
+    return register_public_user(
+        role=UserRole.STUDENT,
+        email=email,
+        matricule=matricule,
+        first_name=first_name,
+        last_name=last_name,
+        password=password,
+    )
+
+
+def issue_otp(*, email, purpose, user=None):
+    """Invalidate les anciens codes et envoie un nouveau code à six chiffres."""
+    email = email.strip().lower()
+    now = timezone.now()
+    OTPChallenge.objects.filter(email__iexact=email, purpose=purpose, consumed_at__isnull=True).update(consumed_at=now)
+    code = f"{secrets.randbelow(1_000_000):06d}"
+    challenge = OTPChallenge.objects.create(
+        email=email,
+        purpose=purpose,
+        code_hash=make_password(code),
+        expires_at=now + timedelta(minutes=settings.ESTUAIREFLEET_OTP_EXPIRY_MINUTES),
+    )
+    send_mail(
+        subject="Votre code EstuaireFleet",
+        message=(
+            f"Votre code de {OTPPurpose(purpose).label.lower()} EstuaireFleet est {code}. "
+            f"Il expire dans {settings.ESTUAIREFLEET_OTP_EXPIRY_MINUTES} minutes."
+        ),
+        from_email=settings.DEFAULT_FROM_EMAIL,
+        recipient_list=[email],
+        fail_silently=False,
+    )
+    return challenge
+
+
+@transaction.atomic
+def verify_otp(*, challenge_id, code):
+    """Vérifie un code sans révéler si le challenge existe ou est expiré."""
+    try:
+        challenge = OTPChallenge.objects.select_for_update().get(pk=challenge_id)
+    except OTPChallenge.DoesNotExist:
+        return None
+    if not challenge.is_usable or challenge.attempts >= settings.ESTUAIREFLEET_OTP_MAX_ATTEMPTS:
+        return None
+    challenge.attempts += 1
+    if not check_password(str(code).strip(), challenge.code_hash):
+        challenge.save(update_fields=["attempts", "updated_at"])
+        return None
+    challenge.consumed_at = timezone.now()
+    challenge.save(update_fields=["attempts", "consumed_at", "updated_at"])
+    return challenge

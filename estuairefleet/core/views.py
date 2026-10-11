@@ -1,12 +1,14 @@
-from django.contrib.auth.mixins import LoginRequiredMixin
+from django.shortcuts import redirect
 from django.urls import reverse
-from django.views.generic import RedirectView, TemplateView
+from django.views.generic import TemplateView
+
+from estuairefleet.users.permissions import AdminRequiredMixin
 
 
-class HomeRedirectView(LoginRequiredMixin, RedirectView):
-    permanent = False
+class HomeRedirectView(TemplateView):
+    template_name = "pages/home.html"
 
-    def get_redirect_url(self, *args, **kwargs):
+    def get_redirect_url(self):
         destinations = {
             "student": "signals:home",
             "driver": "signals:driver_map",
@@ -14,15 +16,15 @@ class HomeRedirectView(LoginRequiredMixin, RedirectView):
             "administrator": "core:dashboard",
             "staff": "signals:monitor",
         }
+        if self.request.user.is_superuser:
+            return reverse("core:dashboard")
         return reverse(destinations.get(self.request.user.role, "signals:home"))
 
-
-class AdminDashboardView(LoginRequiredMixin, TemplateView):
-    template_name = "core/dashboard.html"
-
     def dispatch(self, request, *args, **kwargs):
-        if request.user.role not in {"admin", "administrator"} and not request.user.is_superuser:
-            from django.core.exceptions import PermissionDenied
-
-            raise PermissionDenied
+        if request.user.is_authenticated:
+            return redirect(self.get_redirect_url())
         return super().dispatch(request, *args, **kwargs)
+
+
+class AdminDashboardView(AdminRequiredMixin, TemplateView):
+    template_name = "core/dashboard.html"

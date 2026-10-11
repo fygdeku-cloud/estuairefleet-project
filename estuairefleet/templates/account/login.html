@@ -1,5 +1,27 @@
 {% extends "base.html" %}
 {% block title %}Connexion — EstuaireFleet{% endblock %}
 {% block content %}
-<div class="ef-auth"><section class="ef-auth-card" aria-labelledby="login-title"><aside class="ef-auth-aside"><p class="ef-kicker" style="color:#fff">INSAM · mobilité étudiante</p><h1>Ne ratez plus votre bus.</h1><p>Signalez votre présence en un geste et restez informé du trajet.</p><div aria-hidden="true" style="font-size:4rem;margin-top:32px">🚌</div></aside><div class="ef-auth-form"><h2 id="login-title">Bienvenue</h2><p class="ef-muted">Connectez-vous avec votre matricule ou votre e-mail.</p><form method="post" class="ef-form">{% csrf_token %}{% if form.non_field_errors %}<div class="ef-toast ef-toast-error">Identifiant ou mot de passe incorrect.</div>{% endif %}<div class="ef-field"><label for="id_username">Matricule ou e-mail</label><input id="id_username" name="username" autocomplete="username" required value="{{ form.username.value|default:'' }}"></div><div class="ef-field"><label for="id_password">Mot de passe</label><input id="id_password" name="password" type="password" autocomplete="current-password" required><button type="button" class="ef-btn ef-btn-ghost ef-btn-sm" data-toggle="password" data-target="id_password">Afficher le mot de passe</button></div><input type="hidden" name="next" value="{{ next }}"><button class="ef-btn ef-btn-primary" type="submit">Se connecter</button></form><p class="small ef-muted" style="margin-top:20px">Les comptes sont créés par l’administration.</p></div></section></div>
+<div class="ef-auth">
+  <section class="ef-auth-card" aria-labelledby="login-title">
+    <aside class="ef-auth-aside">
+      <p class="ef-kicker" style="color:#fff">INSAM · mobilité connectée</p>
+      <h1>Ne ratez plus votre bus.</h1>
+      <p>Un espace sécurisé pour chaque acteur du transport étudiant.</p>
+      <div class="ef-auth-route" aria-hidden="true"><span>●</span><i></i><span>●</span></div>
+    </aside>
+    <div class="ef-auth-form">
+      <h2 id="login-title">Bienvenue</h2>
+      <p class="ef-muted">Connectez-vous avec votre matricule ou votre e-mail. Un code OTP sera demandé ensuite.</p>
+      <form method="post" class="ef-form">
+        {% csrf_token %}
+        {% if form.non_field_errors %}<div class="ef-toast ef-toast-error">{{ form.non_field_errors }}</div>{% endif %}
+        <div class="ef-field"><label for="id_username">Matricule ou e-mail</label><input id="id_username" name="username" autocomplete="username" required value="{{ form.username.value|default:'' }}"></div>
+        <div class="ef-field"><label for="id_password">Mot de passe</label><input id="id_password" name="password" type="password" autocomplete="current-password" required><button type="button" class="ef-btn ef-btn-ghost ef-btn-sm" data-toggle="password" data-target="id_password">Afficher le mot de passe</button></div>
+        <input type="hidden" name="next" value="{{ next }}">
+        <button class="ef-btn ef-btn-primary" type="submit">Se connecter</button>
+      </form>
+      <p class="small ef-muted" style="margin-top:20px">Pas encore de compte ? <a href="{% url 'users:signup' %}">Choisir étudiant ou chauffeur</a>.</p>
+    </div>
+  </section>
+</div>
 {% endblock %}

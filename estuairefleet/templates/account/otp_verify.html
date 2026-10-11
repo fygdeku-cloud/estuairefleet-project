@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}Vérification OTP — EstuaireFleet{% endblock %}
+{% block content %}
+<div class="ef-auth">
+  <section class="ef-auth-card ef-auth-card-single" aria-labelledby="otp-title">
+    <div class="ef-auth-form">
+      <p class="ef-kicker">Sécurité du compte</p>
+      <h1 id="otp-title">Entrez votre code</h1>
+      <p class="ef-muted">Nous avons envoyé un code à 6 chiffres à votre adresse e-mail. Il reste valable quelques minutes.</p>
+      {% if form.non_field_errors %}<div class="ef-toast ef-toast-error">{{ form.non_field_errors }}</div>{% endif %}
+      <form method="post" class="ef-form" autocomplete="off">
+        {% csrf_token %}
+        <div class="ef-field">
+          <label for="{{ form.code.id_for_label }}">{{ form.code.label }}</label>
+          {{ form.code }}
+          {% for error in form.code.errors %}<div class="ef-toast ef-toast-error" role="alert">{{ error }}</div>{% endfor %}
+        </div>
+        <button class="ef-btn ef-btn-primary" type="submit">Vérifier et continuer</button>
+      </form>
+      <form method="post" class="ef-otp-resend">
+        {% csrf_token %}
+        <button class="ef-btn ef-btn-ghost" type="submit" name="resend" value="1">Renvoyer un code</button>
+        <a class="ef-btn ef-btn-ghost" href="{% url 'users:login' %}">Annuler</a>
+      </form>
+    </div>
+  </section>
+</div>
+{% endblock %}

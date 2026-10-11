@@ -46,6 +46,9 @@ ESTUAIREFLEET_BUS_POSITION_STALE_SECONDS = env.int("ESTUAIREFLEET_BUS_POSITION_S
 ESTUAIREFLEET_POLL_INTERVAL_SECONDS = env.int("ESTUAIREFLEET_POLL_INTERVAL_SECONDS", default=5)
 ESTUAIREFLEET_POSITION_RETENTION_DAYS = env.int("ESTUAIREFLEET_POSITION_RETENTION_DAYS", default=30)
 ESTUAIREFLEET_AVG_BUS_SPEED_KMH = env.int("ESTUAIREFLEET_AVG_BUS_SPEED_KMH", default=20)
+ESTUAIREFLEET_OTP_EXPIRY_MINUTES = env.int("ESTUAIREFLEET_OTP_EXPIRY_MINUTES", default=10)
+ESTUAIREFLEET_OTP_MAX_ATTEMPTS = env.int("ESTUAIREFLEET_OTP_MAX_ATTEMPTS", default=5)
+ESTUAIREFLEET_OTP_SESSION_AGE_SECONDS = env.int("ESTUAIREFLEET_OTP_SESSION_AGE_SECONDS", default=3600)
 
 ROOT_URLCONF = "config.urls"
 WSGI_APPLICATION = "config.wsgi.application"
@@ -113,6 +116,7 @@ MIDDLEWARE = [
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
+    "estuairefleet.users.middleware.ForcePasswordChangeMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     "allauth.account.middleware.AccountMiddleware",
@@ -154,6 +158,11 @@ SESSION_COOKIE_HTTPONLY = True
 CSRF_COOKIE_HTTPONLY = True
 X_FRAME_OPTIONS = "DENY"
 EMAIL_BACKEND = env.str("DJANGO_EMAIL_BACKEND", default="django.core.mail.backends.smtp.EmailBackend")
+EMAIL_HOST = env.str("EMAIL_HOST", default="localhost")
+EMAIL_PORT = env.int("EMAIL_PORT", default=25)
+EMAIL_HOST_USER = env.str("EMAIL_HOST_USER", default="")
+EMAIL_HOST_PASSWORD = env.str("EMAIL_HOST_PASSWORD", default="")
+EMAIL_USE_TLS = env.bool("EMAIL_USE_TLS", default=False)
 EMAIL_TIMEOUT = 5
 DEFAULT_FROM_EMAIL = env.str("DJANGO_DEFAULT_FROM_EMAIL", default="EstuaireFleet <noreply@estuairefleet.local>")
 ADMINS = [("INSAM", "transport@insam.cm")]

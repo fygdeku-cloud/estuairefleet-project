@@ -1,17 +1,32 @@
 {% extends "base.html" %}
 {% block title %}Accueil — EstuaireFleet{% endblock %}
 {% block content %}
-  <section class="row align-items-center g-4 py-4">
-    <div class="col-lg-7">
-      <span class="badge bg-insam mb-3">INSAM · Mobilité étudiante</span>
-      <h1 class="display-5 fw-bold">Un trajet plus visible, un service plus réactif.</h1>
-      <p class="lead text-secondary">Signalez votre présence en un clic et aidez le chauffeur à mieux vous prendre en charge.</p>
-      {% if request.user.is_authenticated %}
-        <a class="btn btn-insam btn-lg" href="{% url 'signals:emit' %}">Signaler ma position</a>
-      {% else %}
-        <a class="btn btn-insam btn-lg" href="{% url 'users:login' %}">Accéder à mon espace</a>
-      {% endif %}
+<section class="ef-hero">
+  <div class="ef-hero-copy">
+    <span class="ef-badge">INSAM · transport étudiant</span>
+    <h1>Le bon trajet,<br><span>au bon moment.</span></h1>
+    <p class="ef-hero-lead">EstuaireFleet relie étudiants, chauffeurs et équipes de supervision pour rendre chaque trajet plus simple et plus prévisible.</p>
+    <div class="ef-actions">
+      <a class="ef-btn ef-btn-primary" href="{% url 'users:signup' %}">Créer mon espace</a>
+      <a class="ef-btn ef-btn-secondary" href="{% url 'users:login' %}">Se connecter</a>
     </div>
-    <div class="col-lg-5"><div class="insam-card p-4"><h2 class="h5">Suivi transport</h2><p class="text-secondary mb-0">Les informations utiles du trajet sont regroupées dans un espace simple et accessible sur mobile.</p></div></div>
-  </section>
+    <div class="ef-trust-line"><span class="ef-dot ef-dot-success"></span> Code OTP à chaque connexion <span>·</span> Données utiles, au bon endroit</div>
+  </div>
+  <div class="ef-hero-visual" aria-label="Aperçu du suivi d'un trajet">
+    <div class="ef-route-card">
+      <div class="ef-route-top"><span class="ef-kicker">Trajet en service</span><span class="ef-badge ef-badge-success">En route</span></div>
+      <h2>Campus principal → Akwa</h2>
+      <div class="ef-route-line"><span class="ef-route-stop ef-route-stop-active"></span><i></i><span class="ef-route-stop"></span><i></i><span class="ef-route-stop"></span></div>
+      <div class="ef-route-meta"><span>Prochain arrêt</span><strong>Campus principal</strong><span>ETA</span><strong>08 min</strong></div>
+    </div>
+    <div class="ef-floating-stat"><span class="ef-dot"></span><div><strong>Votre présence compte</strong><small>Un signal suffit pour prévenir le chauffeur.</small></div></div>
+  </div>
+</section>
+<section class="ef-section-heading"><p class="ef-kicker">Un espace pour chacun</p><h2>Une expérience adaptée à votre rôle</h2></section>
+<section class="ef-role-grid">
+  <article class="ef-role-card"><span class="ef-role-icon">◎</span><h3>Étudiant</h3><p>Signalez votre présence, consultez votre historique et facilitez votre prise en charge.</p><a href="{% url 'users:signup' %}">Créer un compte étudiant →</a></article>
+  <article class="ef-role-card ef-role-card-dark"><span class="ef-role-icon">▣</span><h3>Chauffeur</h3><p>Visualisez les signaux actifs, retrouvez votre bus et gardez le trajet sous contrôle.</p><a href="{% url 'users:signup' %}">Créer un compte chauffeur →</a></article>
+  <article class="ef-role-card"><span class="ef-role-icon">◈</span><h3>Supervision</h3><p>Les administrateurs et équipes académiques disposent d’une vue globale sur le réseau.</p><a href="{% url 'users:login' %}">Accéder à mon espace →</a></article>
+</section>
+<section class="ef-how-it-works"><div><p class="ef-kicker">Simple et sécurisé</p><h2>De l’inscription au trajet en trois étapes.</h2></div><ol><li><span>01</span><div><strong>Choisissez votre rôle</strong><p>Étudiant ou chauffeur, chaque espace est configuré selon vos besoins.</p></div></li><li><span>02</span><div><strong>Validez votre e-mail</strong><p>Un code OTP protège chaque inscription et chaque connexion.</p></div></li><li><span>03</span><div><strong>Utilisez votre espace</strong><p>Retrouvez directement vos actions essentielles, sans détour.</p></div></li></ol></section>
 {% endblock %}

@@ -2,7 +2,7 @@ from django.conf import settings
 from django.conf.urls.static import static
 from django.contrib import admin
 from django.urls import include, path
-from django.views.generic import TemplateView
+from django.views.generic import RedirectView, TemplateView
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
 from rest_framework.authtoken.views import obtain_auth_token
 
@@ -13,6 +13,9 @@ urlpatterns = [
     path("users/", include("estuairefleet.users.urls", namespace="users")),
     path("signals/", include("estuairefleet.signals.urls", namespace="signals")),
     path("fleet/", include("estuairefleet.fleet.urls", namespace="fleet")),
+    # Les parcours publics passent tous par l’OTP et les profils métiers.
+    path("accounts/signup/", RedirectView.as_view(pattern_name="users:signup", permanent=False)),
+    path("accounts/login/", RedirectView.as_view(pattern_name="users:login", permanent=False)),
     path("accounts/", include("allauth.urls")),
     path("api/", include("config.api_router")),
     path("api/auth-token/", obtain_auth_token, name="obtain_auth_token"),

@@ -4,7 +4,7 @@ from django.shortcuts import redirect
 class ForcePasswordChangeMiddleware:
     """Empêche l'accès à l'application tant que le mot de passe temporaire reste actif."""
 
-    allowed_names = {"users:password_change", "users:logout", "users:login"}
+    allowed_names = {"users:password_change", "users:logout", "users:login", "users:otp_verify"}
 
     def __init__(self, get_response):
         self.get_response = get_response

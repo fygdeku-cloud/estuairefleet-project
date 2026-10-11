@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block title %}Créer un compte — EstuaireFleet{% endblock %}
+{% block content %}
+<div class="ef-auth">
+  <section class="ef-auth-card" aria-labelledby="signup-title">
+    <aside class="ef-auth-aside">
+      <p class="ef-kicker" style="color:#fff">INSAM · mobilité connectée</p>
+      <h1>Votre trajet commence ici.</h1>
+      <p>Choisissez votre espace : signalez votre présence en tant qu’étudiant ou pilotez le transport en tant que chauffeur.</p>
+      <div class="ef-auth-route" aria-hidden="true"><span>●</span><i></i><span>●</span></div>
+    </aside>
+    <div class="ef-auth-form">
+      <h2 id="signup-title">Créer votre compte</h2>
+      <p class="ef-muted">L’adresse e-mail sert à recevoir votre code OTP.</p>
+      {% if form.non_field_errors %}<div class="ef-toast ef-toast-error">{{ form.non_field_errors }}</div>{% endif %}
+      <form method="post" class="ef-form" novalidate>
+        {% csrf_token %}
+        {% for field in form %}
+          <div class="ef-field{% if field.name == 'matricule' %}" data-role-only="student"{% elif field.name == 'licence_number' %} data-role-only="driver"{% endif %}>
+            <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+            {{ field }}
+            {% if field.help_text %}<small class="ef-muted">{{ field.help_text }}</small>{% endif %}
+            {% for error in field.errors %}<div class="ef-toast ef-toast-error" role="alert">{{ error }}</div>{% endfor %}
+          </div>
+        {% endfor %}
+        <button class="ef-btn ef-btn-primary" type="submit">Recevoir mon code OTP</button>
+      </form>
+      <p class="small ef-muted" style="margin-top:20px">Vous avez déjà un compte ? <a href="{% url 'users:login' %}">Se connecter</a>.</p>
+    </div>
+  </section>
+</div>
+{% endblock %}
+{% block extra_js %}
+<script>
+  (() => {
+    const selector = document.querySelector('[data-role-selector]');
+    if (!selector) return;
+    const refresh = () => document.querySelectorAll('[data-role-only]').forEach((field) => {
+      const visible = field.dataset.roleOnly === selector.value;
+      field.hidden = !visible;
+      const input = field.querySelector('input');
+      if (input) input.required = visible;
+    });
+    selector.addEventListener('change', refresh);
+    refresh();
+  })();
+</script>
+{% endblock %}

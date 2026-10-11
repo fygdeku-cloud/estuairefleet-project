@@ -3,7 +3,7 @@ services:
     build:
       context: .
       dockerfile: compose/local/django/Dockerfile
-    command: uv run python manage.py runserver 0.0.0.0:8001
+    command: python manage.py runserver 0.0.0.0:8001
     env_file: .env
     volumes:
       - .:/app
@@ -20,7 +20,7 @@ services:
     build:
       context: .
       dockerfile: compose/local/django/Dockerfile
-    command: uv run celery -A config.celery_app worker -l INFO
+    command: celery -A config.celery_app worker -l INFO
     env_file: .env
     volumes:
       - .:/app
@@ -31,7 +31,7 @@ services:
     build:
       context: .
       dockerfile: compose/local/django/Dockerfile
-    command: uv run celery -A config.celery_app beat -l INFO
+    command: celery -A config.celery_app beat -l INFO
     env_file: .env
     volumes:
       - .:/app

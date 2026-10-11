@@ -19,6 +19,11 @@ class UserRole(models.TextChoices):
     STAFF = "staff", _("Personnel académique / scolarité")
 
 
+class OTPPurpose(models.TextChoices):
+    LOGIN = "login", _("Connexion")
+    SIGNUP = "signup", _("Inscription")
+
+
 phone_validator = RegexValidator(r"^\+?[0-9 ()-]{7,32}$", _("Saisissez un numéro de téléphone valide."))
 
 
@@ -76,6 +81,30 @@ class User(BaseModel, AbstractBaseUser, PermissionsMixin):
     @property
     def is_transport_staff(self):
         return self.role in {UserRole.DRIVER, UserRole.ADMIN, UserRole.STAFF}
+
+
+class OTPChallenge(BaseModel):
+    """Code à usage unique envoyé par e-mail pour finaliser une action sensible."""
+
+    email = models.EmailField(_("adresse e-mail"), db_index=True)
+    purpose = models.CharField(_("usage"), max_length=20, choices=OTPPurpose.choices)
+    code_hash = models.CharField(_("code"), max_length=128)
+    expires_at = models.DateTimeField(_("expire le"))
+    attempts = models.PositiveSmallIntegerField(_("tentatives"), default=0)
+    consumed_at = models.DateTimeField(_("utilisé le"), null=True, blank=True)
+
+    class Meta:
+        verbose_name = _("code OTP")
+        verbose_name_plural = _("codes OTP")
+        indexes = [models.Index(fields=("email", "purpose", "created_at"))]
+
+    @property
+    def is_expired(self):
+        return self.expires_at <= timezone.now()
+
+    @property
+    def is_usable(self):
+        return self.consumed_at is None and not self.is_expired
 
 
 class Student(BaseModel):

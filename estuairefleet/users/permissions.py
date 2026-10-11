@@ -1,14 +1,33 @@
+from django.conf import settings
 from django.core.exceptions import PermissionDenied
+from django.contrib.auth.views import redirect_to_login
+from django.utils import timezone
 from rest_framework.permissions import BasePermission
 
 
-class RoleRequiredMixin:
+class OTPRequiredMixin:
+    """Exige une session authentifiée par OTP avant l'accès à une page protégée."""
+
+    def dispatch(self, request, *args, **kwargs):
+        if not request.user.is_authenticated:
+            return redirect_to_login(request.get_full_path())
+        verified_at = request.session.get("otp_verified_at")
+        try:
+            otp_is_fresh = verified_at and timezone.now().timestamp() - int(verified_at) <= settings.ESTUAIREFLEET_OTP_SESSION_AGE_SECONDS
+        except (TypeError, ValueError):
+            otp_is_fresh = False
+        if not otp_is_fresh:
+            request.session["otp_reauth_next"] = request.get_full_path()
+            request.session.modified = True
+            return redirect("users:login")
+        return super().dispatch(request, *args, **kwargs)
+
+
+class RoleRequiredMixin(OTPRequiredMixin):
     allowed_roles = frozenset()
 
     def dispatch(self, request, *args, **kwargs):
         if not request.user.is_authenticated:
-            from django.contrib.auth.views import redirect_to_login
-
             return redirect_to_login(request.get_full_path())
         if request.user.role not in self.allowed_roles and not request.user.is_superuser:
             raise PermissionDenied

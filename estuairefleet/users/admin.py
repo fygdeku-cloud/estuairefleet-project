@@ -2,7 +2,7 @@ from django.contrib import admin
 from django.contrib.auth import admin as auth_admin
 
 from .forms import UserAdminChangeForm, UserAdminCreationForm
-from .models import AdministratorProfile, Driver, StaffProfile, Student, User
+from .models import AdministratorProfile, Driver, OTPChallenge, StaffProfile, Student, User
 
 
 @admin.register(User)
@@ -28,3 +28,5 @@ admin.site.register(Student)
 admin.site.register(Driver)
 admin.site.register(AdministratorProfile)
 admin.site.register(StaffProfile)
+
+admin.site.register(OTPChallenge)
