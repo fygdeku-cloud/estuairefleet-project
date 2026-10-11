@@ -1,4 +1,12 @@
-from django.contrib.auth.views import LoginView, LogoutView
+from django.contrib.auth.views import (
+    LoginView,
+    LogoutView,
+    PasswordChangeView,
+    PasswordResetCompleteView,
+    PasswordResetConfirmView,
+    PasswordResetDoneView,
+    PasswordResetView,
+)
 from django.contrib.messages.views import SuccessMessageMixin
 from django.urls import reverse
 from django.views.generic import DetailView, RedirectView, UpdateView
@@ -17,7 +25,7 @@ class UserDetailView(DetailView):
 
 class UserUpdateView(SuccessMessageMixin, UpdateView):
     model = User
-    fields = ("first_name", "last_name", "phone")
+    fields = ("first_name", "last_name", "phone_number")
     template_name = "users/user_form.html"
     success_message = "Votre profil a été mis à jour."
 
@@ -40,3 +48,10 @@ logout_view = LogoutView.as_view()
 user_detail_view = UserDetailView.as_view()
 user_update_view = UserUpdateView.as_view()
 user_redirect_view = UserRedirectView.as_view()
+password_change_view = PasswordChangeView.as_view(
+    template_name="users/password_change.html", success_url="/users/~redirect/"
+)
+password_reset_view = PasswordResetView.as_view(template_name="users/password_reset.html")
+password_reset_done_view = PasswordResetDoneView.as_view(template_name="users/password_reset_done.html")
+password_reset_confirm_view = PasswordResetConfirmView.as_view(template_name="users/password_reset_confirm.html")
+password_reset_complete_view = PasswordResetCompleteView.as_view(template_name="users/password_reset_complete.html")

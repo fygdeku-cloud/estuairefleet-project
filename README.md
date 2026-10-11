@@ -1,6 +1,6 @@
 # EstuaireFleet
 
-EstuaireFleet est le MVP INSAM de gestion du transport étudiant. Le projet fournit un socle Django server-rendered pour les étudiants, chauffeurs et responsables transport : trajets, flotte, signaux de localisation, alertes prioritaires, inter-campus et notifications.
+EstuaireFleet est l’application web responsive de transport étudiant d’INSAM. Elle permet aux étudiants de signaler leur présence, aux chauffeurs de suivre les demandes utiles à leur trajet et aux responsables de superviser la flotte.
 
 ## Démarrage local
 
@@ -10,51 +10,33 @@ Pré-requis : Docker Compose et [uv](https://docs.astral.sh/uv/).
 cp .env.example .env
 uv sync
 uv run python manage.py migrate
+uv run python manage.py seed_demo
 uv run python manage.py runserver
 ```
 
-Pour lancer l’environnement complet avec PostgreSQL, Redis, Celery et Mailpit :
+Ou avec l’environnement complet : `just up`. Les coordonnées du seeder sont des placeholders autour de Yaoundé.
 
-```bash
-docker compose -f docker-compose.local.yml up --build
-```
+Comptes de démonstration : `admin@insam.local`, `scolarite@insam.local`, `chauffeur1@insam.local` et `INS-2026-001` avec le mot de passe `EstuaireDemo2026!` en mode DEBUG uniquement.
 
-L’application est disponible sur `http://localhost:8000`, la boîte de développement sur `http://localhost:8025`, et la documentation API sur `/api/docs/`.
+## Commandes
 
-## Commandes utiles
+`just test`, `just lint`, `just fmt`, `just migrate`, `just makemigrations`, `just seed`, `just shell`, `just logs`, `just screenshots`.
 
-```bash
-uv run python manage.py check
-uv run pytest
-uv run ruff check .
-uv run ruff format .
-uv run python manage.py makemigrations
-uv run python manage.py migrate
-```
+Les simulations sont `python manage.py simulate_signals --trajet R1-AL --count 5` et `python manage.py simulate_bus_movement --bus CE-2026-EF`.
 
 ## Architecture
 
-Les apps Django sont regroupées sous `estuairefleet/` :
+Les domaines `users`, `fleet` et `signals` séparent modèles, validateurs, services d’écriture et selectors de lecture. Les profils de rôle sont composés par OneToOne. Les positions étudiant sont filtrées au selector central de Signals avant tout rendu ou payload JSON.
 
-- `users` : utilisateur custom, matricule/e-mail et rôles ;
-- `fleet` : campus, trajets, bus et positions des bus ;
-- `signals` : émission, consentement, géorepérage et expiration ;
-- `alerts` : seuil prioritaire, réponse chauffeur et escalade ;
-- `intercampus` : cours et affectations de bus ;
-- `notifications` : notifications in-app et canaux préparés.
+Les apps `alerts`, `intercampus` et `notifications` sont conservées comme points d’extension de la feuille de route ; aucun écran de ces modules n’est exposé par le MVP courant.
 
-Chaque domaine sépare `models.py`, `forms.py`, `views/`, `services.py`, `selectors.py`, `validators.py`, `permissions.py` et `tests/`. Les services réalisent les écritures dans des transactions atomiques ; les selectors portent les lectures.
+## Qualité et déploiement
 
-La configuration est séparée dans `config/settings/base.py`, `local.py`, `test.py` et `production.py`. PostgreSQL est utilisé par les environnements applicatifs ; SQLite est réservé aux tests locaux isolés. Redis et Celery sont prêts pour l’expiration des signaux, les alertes et les notifications asynchrones.
+```bash
+uv run pytest
+uv run ruff check .
+uv run ruff format --check .
+DJANGO_SECRET_KEY='clé-de-contrôle-longue' DJANGO_ALLOWED_HOSTS='localhost' DJANGO_SETTINGS_MODULE=config.settings.production uv run python manage.py check --deploy
+```
 
-## Sécurité et confidentialité
-
-Les coordonnées des étudiants ne sont jamais exposées dans les lectures étudiantes. La carte des signaux est réservée aux acteurs transport autorisés. Le consentement de localisation est vérifié avant émission, les signaux expirent automatiquement et l’authentification utilise Argon2 en priorité.
-
-## Interface
-
-Le design system INSAM est dans `estuairefleet/static/css/design-system.css`. Il utilise la palette rouge/blanc/noir, Bootstrap 5 et Leaflet/OpenStreetMap. Le bouton de signal est conçu pour une interaction mobile en un geste.
-
-## Déploiement
-
-Le fichier `docker-compose.production.yml` orchestre Django/Gunicorn, Celery, PostgreSQL et Redis. Les secrets et paramètres d’hôte doivent être fournis par l’environnement de déploiement ; ne pas versionner `.env`.
+Les secrets, l’URL PostgreSQL, Redis, l’e-mail et les paramètres métier sont fournis par variables d’environnement. En production, activer HTTPS, HSTS, les cookies sécurisés et les volumes persistants PostgreSQL/Redis.

@@ -36,6 +36,17 @@ DATABASES = {
 DATABASES["default"]["ATOMIC_REQUESTS"] = True
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
+ESTUAIREFLEET_SIGNAL_TTL_MINUTES = env.int("ESTUAIREFLEET_SIGNAL_TTL_MINUTES", default=20)
+ESTUAIREFLEET_SIGNAL_MAX_RENEWALS = env.int("ESTUAIREFLEET_SIGNAL_MAX_RENEWALS", default=3)
+ESTUAIREFLEET_GEOFENCE_RADIUS_M = env.int("ESTUAIREFLEET_GEOFENCE_RADIUS_M", default=500)
+ESTUAIREFLEET_ALERT_THRESHOLD_DEFAULT = env.int("ESTUAIREFLEET_ALERT_THRESHOLD_DEFAULT", default=5)
+ESTUAIREFLEET_ABUSE_WARNINGS_BEFORE_SUSPENSION = env.int("ESTUAIREFLEET_ABUSE_WARNINGS_BEFORE_SUSPENSION", default=2)
+ESTUAIREFLEET_SUSPENSION_HOURS = env.int("ESTUAIREFLEET_SUSPENSION_HOURS", default=24)
+ESTUAIREFLEET_BUS_POSITION_STALE_SECONDS = env.int("ESTUAIREFLEET_BUS_POSITION_STALE_SECONDS", default=60)
+ESTUAIREFLEET_POLL_INTERVAL_SECONDS = env.int("ESTUAIREFLEET_POLL_INTERVAL_SECONDS", default=5)
+ESTUAIREFLEET_POSITION_RETENTION_DAYS = env.int("ESTUAIREFLEET_POSITION_RETENTION_DAYS", default=30)
+ESTUAIREFLEET_AVG_BUS_SPEED_KMH = env.int("ESTUAIREFLEET_AVG_BUS_SPEED_KMH", default=20)
+
 ROOT_URLCONF = "config.urls"
 WSGI_APPLICATION = "config.wsgi.application"
 
@@ -76,11 +87,11 @@ MIGRATION_MODULES = {"sites": "estuairefleet.contrib.sites.migrations"}
 
 AUTH_USER_MODEL = "users.User"
 AUTHENTICATION_BACKENDS = [
-    "estuairefleet.users.backends.EmailOrMatriculeBackend",
+    "estuairefleet.users.backends.IdentifierBackend",
     "django.contrib.auth.backends.ModelBackend",
     "allauth.account.auth_backends.AuthenticationBackend",
 ]
-LOGIN_REDIRECT_URL = "users:redirect"
+LOGIN_REDIRECT_URL = "core:home"
 LOGIN_URL = "users:login"
 PASSWORD_HASHERS = [
     "django.contrib.auth.hashers.Argon2PasswordHasher",

@@ -3,22 +3,39 @@ set dotenv-load := true
 install:
     uv sync
 
+up:
+    docker compose -f docker-compose.local.yml up --build
+
+down:
+    docker compose -f docker-compose.local.yml down
+
 run:
     uv run python manage.py runserver
-
-check:
-    uv run python manage.py check
-    uv run ruff check .
 
 test:
     uv run pytest
 
-format:
+lint:
+    uv run ruff check .
+    uv run ruff format --check .
+
+fmt:
     uv run ruff format .
 
-migrations:
-    uv run python manage.py makemigrations
+migrate:
     uv run python manage.py migrate
 
-local:
-    docker compose -f docker-compose.local.yml up --build
+makemigrations:
+    uv run python manage.py makemigrations
+
+seed:
+    uv run python manage.py seed_demo
+
+shell:
+    uv run python manage.py shell
+
+logs:
+    docker compose -f docker-compose.local.yml logs -f django
+
+screenshots:
+    uv run python tests/visual/screenshots.py

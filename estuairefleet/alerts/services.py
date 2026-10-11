@@ -40,7 +40,7 @@ def evaluate_route_alert(*, route) -> Alert | None:
 
 
 @transaction.atomic
-def respond_to_alert(*, alert: Alert, driver, response_type, eta_minutes=None, reason="", relay_bus=None):  # noqa: PLR0913
+def respond_to_alert(*, alert: Alert, driver, response_type, eta_minutes=None, reason="", relay_bus=None):
     if not alert.route.buses.filter(driver=driver).exists():
         raise PermissionDenied("Cette alerte ne concerne pas votre bus.")
     if alert.status not in (AlertStatus.TRIGGERED, AlertStatus.ESCALATED):

@@ -1,12 +1,13 @@
 from celery import shared_task
-from django.utils import timezone
 
-from .models import Signal, SignalStatus
+from .services import expire_stale_signals, purge_old_positions
 
 
 @shared_task
 def expire_signals():
-    return Signal.objects.filter(
-        status=SignalStatus.ACTIVE,
-        expires_at__lte=timezone.now(),
-    ).update(status=SignalStatus.EXPIRED)
+    return expire_stale_signals()
+
+
+@shared_task
+def purge_old_signal_positions():
+    return purge_old_positions()

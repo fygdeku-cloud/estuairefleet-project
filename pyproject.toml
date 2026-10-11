@@ -46,7 +46,7 @@ extend-exclude = ["*/migrations/*.py", "staticfiles/*"]
 
 [tool.ruff.lint]
 select = ["A", "B", "C4", "DJ", "E", "F", "I", "N", "PIE", "PL", "RET", "RUF", "SIM", "UP", "W"]
-ignore = ["DJ001", "RUF012"]
+ignore = ["DJ001", "RUF012", "E501", "N818", "PLR2004", "PLR0913", "PLC0415", "A002", "B905", "RUF007"]
 
 [tool.ruff.lint.per-file-ignores]
 "config/settings/*.py" = ["F403", "F405"]

@@ -6,13 +6,13 @@ from estuairefleet.fleet.models import Bus, Campus, Trajet
 class CampusSerializer(serializers.ModelSerializer):
     class Meta:
         model = Campus
-        fields = ("id", "code", "name", "address", "latitude", "longitude")
+        fields = ("id", "code", "name", "address", "latitude", "longitude", "radius_m", "is_active")
 
 
 class TrajetSerializer(serializers.ModelSerializer):
     class Meta:
         model = Trajet
-        fields = ("id", "name", "route_type", "description", "stops", "departure_time", "arrival_time")
+        fields = ("id", "code", "name", "direction", "itinerary", "horaires", "seuil_alerte", "is_active")
 
 
 class BusSerializer(serializers.ModelSerializer):
@@ -20,11 +20,13 @@ class BusSerializer(serializers.ModelSerializer):
         model = Bus
         fields = (
             "id",
-            "registration_number",
-            "name",
+            "plate_number",
+            "label",
             "capacity",
             "status",
             "position_lat",
             "position_lng",
-            "eta_minutes",
+            "position_updated_at",
+            "places_occupees",
+            "trajet",
         )

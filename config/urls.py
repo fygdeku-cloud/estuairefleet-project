@@ -7,11 +7,12 @@ from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
 from rest_framework.authtoken.views import obtain_auth_token
 
 urlpatterns = [
-    path("", TemplateView.as_view(template_name="pages/home.html"), name="home"),
+    path("", include("estuairefleet.core.urls", namespace="core")),
     path("about/", TemplateView.as_view(template_name="pages/about.html"), name="about"),
     path(settings.ADMIN_URL, admin.site.urls),
     path("users/", include("estuairefleet.users.urls", namespace="users")),
     path("signals/", include("estuairefleet.signals.urls", namespace="signals")),
+    path("fleet/", include("estuairefleet.fleet.urls", namespace="fleet")),
     path("accounts/", include("allauth.urls")),
     path("api/", include("config.api_router")),
     path("api/auth-token/", obtain_auth_token, name="obtain_auth_token"),

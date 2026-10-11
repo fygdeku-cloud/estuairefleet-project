@@ -1,26 +1,62 @@
-from math import hypot
-
-from django.db.models import QuerySet
+from django.db.models import Count
+from django.utils import timezone
 
 from .models import Bus, Campus, Trajet
 
 
-def get_active_routes() -> QuerySet[Trajet]:
-    return Trajet.objects.active().prefetch_related("campuses", "buses")
+def get_active_trajets(now=None):
+    now = now or timezone.localtime()
+    return [
+        trajet
+        for trajet in Trajet.objects.filter(is_active=True).prefetch_related("campuses", "stops", "buses")
+        if trajet.is_in_service(now)
+    ]
 
 
-def get_available_buses() -> QuerySet[Bus]:
-    return Bus.objects.filter(status__in=("available", "en_route")).select_related("driver")
+def get_trajet_detail(id):
+    return Trajet.objects.prefetch_related("campuses", "stops", "buses__chauffeur__user").get(pk=id)
 
 
-def get_nearest_available_bus(*, latitude, longitude) -> Bus | None:
-    buses = get_available_buses().filter(position_lat__isnull=False, position_lng__isnull=False)
-    return min(
-        buses,
-        key=lambda bus: hypot(float(bus.position_lat) - float(latitude), float(bus.position_lng) - float(longitude)),
-        default=None,
+def get_trajets_in_service(now=None):
+    return get_active_trajets(now)
+
+
+def get_buses_for_map(user=None):
+    return list(
+        Bus.objects.filter(trajet__is_active=True)
+        .select_related("trajet", "chauffeur__user")
+        .values(
+            "id",
+            "plate_number",
+            "status",
+            "position_lat",
+            "position_lng",
+            "position_updated_at",
+            "trajet_id",
+            "trajet__name",
+            "places_occupees",
+            "capacity",
+        )
     )
 
 
-def get_active_campuses() -> QuerySet[Campus]:
-    return Campus.objects.active()
+def get_bus_for_chauffeur(user):
+    return Bus.objects.select_related("trajet", "chauffeur__user").get(chauffeur__user=user)
+
+
+def get_buses_for_trajet(trajet):
+    return Bus.objects.filter(trajet=trajet).select_related("chauffeur__user")
+
+
+def get_fleet_overview_counts():
+    return {row["status"]: row["count"] for row in Bus.objects.values("status").annotate(count=Count("id"))}
+
+
+def get_campuses():
+    return Campus.objects.filter(is_active=True)
+
+
+def get_free_chauffeurs():
+    from estuairefleet.users.models import Chauffeur
+
+    return Chauffeur.objects.select_related("user").filter(user__is_active=True, bus__isnull=True)
