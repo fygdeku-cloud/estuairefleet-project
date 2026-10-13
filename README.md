@@ -16,6 +16,8 @@ uv run python manage.py runserver
 
 Ou avec l’environnement complet : `just up`. Les coordonnées du seeder sont des placeholders autour de Yaoundé.
 
+En local, les e-mails OTP sont capturés par Mailpit. Consultez-les sur http://localhost:8025 ; le serveur SMTP utilisé par Django est `mailpit:1025`.
+
 Comptes de démonstration : `admin@insam.local`, `scolarite@insam.local`, `chauffeur1@insam.local` et `INS-2026-001` avec le mot de passe `EstuaireDemo2026!` en mode DEBUG uniquement.
 
 ## Commandes

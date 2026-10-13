@@ -150,6 +150,7 @@ def register_student(*, email, matricule, first_name, last_name, password):
     )
 
 
+@transaction.atomic
 def issue_otp(*, email, purpose, user=None):
     """Invalidate les anciens codes et envoie un nouveau code à six chiffres."""
     email = email.strip().lower()
@@ -162,6 +163,21 @@ def issue_otp(*, email, purpose, user=None):
         code_hash=make_password(code),
         expires_at=now + timedelta(minutes=settings.ESTUAIREFLEET_OTP_EXPIRY_MINUTES),
     )
+    send_otp_email(
+        email=email,
+        code=code,
+        purpose=purpose,
+    )
+    return challenge
+
+
+def send_otp_email(*, email, code, purpose):
+    """Envoie un OTP via le backend e-mail configuré par l'environnement.
+
+    En local, ``config.settings.local`` force le backend SMTP vers Mailpit
+    (``mailpit:1025``). La production conserve son relais SMTP configuré par
+    l'environnement sans modifier le parcours OTP.
+    """
     send_mail(
         subject="Votre code EstuaireFleet",
         message=(
@@ -172,7 +188,6 @@ def issue_otp(*, email, purpose, user=None):
         recipient_list=[email],
         fail_silently=False,
     )
-    return challenge
 
 
 @transaction.atomic

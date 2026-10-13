@@ -1,10 +1,12 @@
 import re
+from unittest.mock import patch
 
 from django.core import mail
 from django.test import TestCase, override_settings
 from django.urls import reverse
 
 from estuairefleet.users.models import Chauffeur, Student, User, UserRole
+from estuairefleet.users.services import issue_otp
 
 
 @override_settings(ACCOUNT_ALLOW_REGISTRATION=True)
@@ -75,3 +77,20 @@ class StudentSignupTests(TestCase):
         response = self.client.post(reverse("users:otp_verify"), {"code": code})
         self.assertRedirects(response, reverse("core:home"), fetch_redirect_response=False)
         self.assertEqual(str(self.client.session["_auth_user_id"]), str(user.pk))
+
+    @override_settings(
+        EMAIL_BACKEND="django.core.mail.backends.smtp.EmailBackend",
+        EMAIL_HOST="mailpit",
+        EMAIL_PORT=1025,
+        EMAIL_USE_TLS=False,
+        EMAIL_USE_SSL=False,
+    )
+    @patch("django.core.mail.backends.smtp.EmailBackend.send_messages", autospec=True, return_value=1)
+    def test_otp_is_sent_through_the_configured_mailpit_smtp_backend(self, send_messages):
+        issue_otp(email="mailpit@example.test", purpose="signup")
+
+        send_messages.assert_called_once()
+        email_messages = send_messages.call_args.args[-1]
+        self.assertEqual(len(email_messages), 1)
+        self.assertEqual(email_messages[0].to, ["mailpit@example.test"])
+        self.assertRegex(email_messages[0].body, r"\b\d{6}\b")
