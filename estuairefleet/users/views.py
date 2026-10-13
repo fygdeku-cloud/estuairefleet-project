@@ -16,7 +16,7 @@ from django.contrib.auth.views import (
 )
 from django.contrib.messages.views import SuccessMessageMixin
 from django.http import Http404
-from django.shortcuts import redirect
+from django.shortcuts import redirect, render
 from django.urls import reverse
 from django.utils import timezone
 from django.utils.http import url_has_allowed_host_and_scheme
@@ -70,6 +70,16 @@ class IdentifierLoginView(LoginView):
         )
         messages.info(self.request, "Un code de vérification vient d'être envoyé à votre adresse e-mail.")
         return redirect("users:otp_verify")
+
+
+class LogoutConfirmView(LogoutView):
+    """Affiche une confirmation avant de fermer la session."""
+
+    http_method_names = ["get", "post", "options"]
+    template_name = "account/logout.html"
+
+    def get(self, request, *args, **kwargs):
+        return render(request, self.template_name)
 
 
 class StudentSignupView(FormView):
@@ -216,7 +226,7 @@ class UserRedirectView(RedirectView):
 
 
 login_view = IdentifierLoginView.as_view()
-logout_view = LogoutView.as_view()
+logout_view = LogoutConfirmView.as_view(next_page="core:home")
 user_detail_view = UserDetailView.as_view()
 signup_view = StudentSignupView.as_view()
 otp_verify_view = OTPVerifyView.as_view()

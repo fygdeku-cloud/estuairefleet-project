@@ -1,34 +1,7 @@
 {% extends "base.html" %}
 {% block title %}Créer un compte — EstuaireFleet{% endblock %}
 {% block content %}
-<div class="ef-auth">
-  <section class="ef-auth-card" aria-labelledby="signup-title">
-    <aside class="ef-auth-aside">
-      <p class="ef-kicker" style="color:#fff">INSAM · mobilité connectée</p>
-      <h1>Votre trajet commence ici.</h1>
-      <p>Choisissez votre espace : signalez votre présence en tant qu’étudiant ou pilotez le transport en tant que chauffeur.</p>
-      <div class="ef-auth-route" aria-hidden="true"><span>●</span><i></i><span>●</span></div>
-    </aside>
-    <div class="ef-auth-form">
-      <h2 id="signup-title">Créer votre compte</h2>
-      <p class="ef-muted">L’adresse e-mail sert à recevoir votre code OTP.</p>
-      {% if form.non_field_errors %}<div class="ef-toast ef-toast-error">{{ form.non_field_errors }}</div>{% endif %}
-      <form method="post" class="ef-form" novalidate>
-        {% csrf_token %}
-        {% for field in form %}
-          <div class="ef-field{% if field.name == 'matricule' %}" data-role-only="student"{% elif field.name == 'licence_number' %} data-role-only="driver"{% endif %}>
-            <label for="{{ field.id_for_label }}">{{ field.label }}</label>
-            {{ field }}
-            {% if field.help_text %}<small class="ef-muted">{{ field.help_text }}</small>{% endif %}
-            {% for error in field.errors %}<div class="ef-toast ef-toast-error" role="alert">{{ error }}</div>{% endfor %}
-          </div>
-        {% endfor %}
-        <button class="ef-btn ef-btn-primary" type="submit">Recevoir mon code OTP</button>
-      </form>
-      <p class="small ef-muted" style="margin-top:20px">Vous avez déjà un compte ? <a href="{% url 'users:login' %}">Se connecter</a>.</p>
-    </div>
-  </section>
-</div>
+  <div class="mx-auto grid max-w-6xl overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-soft lg:grid-cols-[.75fr_1.25fr]"><aside class="relative overflow-hidden bg-insam-600 px-7 py-10 text-white sm:px-10 sm:py-14"><div class="absolute -bottom-24 -left-24 h-80 w-80 rounded-full border-[40px] border-white/10"></div><div class="relative"><p class="text-xs font-bold uppercase tracking-[.18em] text-insam-100">INSAM · mobilité connectée</p><h1 class="mt-12 text-4xl font-bold leading-[1.02] tracking-tight sm:text-5xl">Votre trajet commence ici.</h1><p class="mt-5 max-w-sm leading-7 text-insam-50">Choisissez votre espace et rejoignez une mobilité plus simple, plus prévisible, plus humaine.</p><div class="mt-14 space-y-4 text-sm"><div class="flex items-center gap-3"><span class="grid h-8 w-8 place-items-center rounded-full bg-white/15">01</span><span>Créez votre espace</span></div><div class="flex items-center gap-3"><span class="grid h-8 w-8 place-items-center rounded-full bg-white/15">02</span><span>Validez votre e-mail</span></div><div class="flex items-center gap-3"><span class="grid h-8 w-8 place-items-center rounded-full bg-white/15">03</span><span>Signalez votre présence</span></div></div></div></aside><section class="px-6 py-8 sm:px-12 sm:py-14" aria-labelledby="signup-title"><div class="mb-8"><p class="text-xs font-bold uppercase tracking-[.18em] text-insam-600">Premiers pas</p><h2 id="signup-title" class="mt-2 text-3xl font-bold tracking-tight text-slate-950">Créer votre compte</h2><p class="mt-3 text-sm leading-6 text-slate-500">L’adresse e-mail sert à recevoir votre code OTP de confirmation.</p></div>{% if form.non_field_errors %}<div class="mb-5 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm font-semibold text-red-700">{{ form.non_field_errors }}</div>{% endif %}<form method="post" class="ef-form grid gap-5 sm:grid-cols-2" novalidate>{% csrf_token %}{% for field in form %}<div class="{% if field.name == 'role' or field.name == 'email' %}sm:col-span-2{% endif %}"{% if field.name == 'matricule' %} data-role-only="student"{% elif field.name == 'licence_number' %} data-role-only="driver"{% endif %}><label for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}{% if field.help_text %}<small class="mt-1 block text-xs text-slate-400">{{ field.help_text }}</small>{% endif %}{% for error in field.errors %}<div class="mt-2 rounded-xl bg-red-50 p-3 text-xs font-semibold text-red-700" role="alert">{{ error }}</div>{% endfor %}</div>{% endfor %}<button class="sm:col-span-2 inline-flex w-full items-center justify-center rounded-xl bg-insam-600 px-5 py-3.5 text-sm font-bold text-white shadow-lg shadow-insam-600/20 transition hover:bg-insam-700" type="submit">Recevoir mon code OTP <span class="ml-2">→</span></button></form><p class="mt-8 border-t border-slate-100 pt-6 text-sm text-slate-500">Vous avez déjà un compte ? <a class="font-bold text-insam-600 hover:text-insam-800" href="{% url 'users:login' %}">Se connecter</a>.</p></section></div>
 {% endblock %}
 {% block extra_js %}
 <script>

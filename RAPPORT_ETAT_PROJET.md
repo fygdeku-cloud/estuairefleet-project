@@ -14,7 +14,7 @@ Le dépôt était arrêté après les modules 1 à 3 : Core & Users, Fleet et Si
 - `alerts` avec les modèles `Alert` et `AlertResponse`, un service de seuil partiel et une tâche d'escalade partielle.
 - `intercampus` avec `CoursInterCampus`, un formulaire minimal, deux services et un selector minimal.
 - `notifications` avec `Notification`, un service de création dans l'application et un selector des éléments non lus.
-- Bootstrap 5, Crispy Forms, Leaflet local, CSS INSAM, Docker Compose et uv étaient déjà configurés.
+- Leaflet local, CSS INSAM, Docker Compose et uv étaient déjà configurés.
 
 Dysfonctionnements relevés :
 
@@ -101,7 +101,7 @@ Dysfonctionnements relevés :
 - `estuairefleet/intercampus/` : planning, transitions, services, vues, API et tâche de notification.
 - `estuairefleet/notifications/` : notifications personnelles, lecture, services, vues et API.
 - `estuairefleet/templates/` : base, `common/`, comptes, utilisateurs, flotte, signaux, alertes, inter-campus et notifications.
-- `estuairefleet/static/` : design system, CSS par domaine, Bootstrap, Leaflet et JavaScript.
+- `estuairefleet/static/` : design system Tailwind/Flowbite, CSS par domaine, Leaflet et JavaScript.
 - `tests/` et `estuairefleet/*/tests/` : tests de parcours, métier, API et confidentialité.
 
 ### Modèles et statuts
@@ -127,7 +127,7 @@ Dysfonctionnements relevés :
 - Palette INSAM présente dans `design-system.css` : rouge principal `#C8102E`, rouge foncé `#9B0C24`, rouge de signal contrasté, noir `#1A1A1A`, fond `#F8F8F8` et bordure `#E5E5E5`.
 - Composants réutilisables : boutons, cartes, badges, tableaux, formulaires, états vides, notifications, cartes et navigation responsive.
 - CSS par domaine ajouté pour Alerts, Intercampus et Notifications.
-- Django, DRF, PostgreSQL, Redis, Celery, Bootstrap 5, Crispy Forms, Leaflet, Gunicorn et WhiteNoise sont configurés.
+- Django, DRF, PostgreSQL, Redis, Celery, Tailwind CSS, Flowbite, Leaflet, Gunicorn et WhiteNoise sont configurés.
 - `uv.lock` est synchronisé après retrait des dépendances d'authentification non utilisées.
 - Local et production disposent chacun d'un Dockerfile et d'un Compose avec PostgreSQL, Redis, Django, worker Celery et beat.
 

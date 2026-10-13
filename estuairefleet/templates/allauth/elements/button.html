@@ -6,14 +6,7 @@
                       {% if attrs.id %}id="{{ attrs.id }}"{% endif %}
                       {% if attrs.name %}name="{{ attrs.name }}"{% endif %}
                       {% if attrs.type %}type="{{ attrs.type }}"{% endif %}
-                      class="btn
-{% if 'success' in attrs.tags %}btn-success
-{% elif 'warning' in attrs.tags %}btn-warning
-{% elif 'secondary' in attrs.tags %}btn-secondary
-{% elif 'danger' in attrs.tags %}btn-danger
-{% elif 'primary' in attrs.tags %}btn-primary
-{% else %}btn-primary
-{% endif %}"
+                      class="inline-flex items-center justify-center rounded-xl bg-insam-600 px-5 py-3 text-sm font-bold text-white shadow-lg shadow-insam-600/20 transition hover:bg-insam-700"
 >
   {% slot %}
   {% endslot %}

@@ -1,0 +1,69 @@
+@import url("https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap");
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    color-scheme: light;
+  }
+
+  body {
+    @apply bg-cloud font-sans text-slate-900 antialiased;
+  }
+
+  h1, h2, h3, h4 {
+    @apply font-display;
+  }
+
+  input, select, textarea {
+    @apply transition duration-150;
+  }
+
+  input:focus, select:focus, textarea:focus {
+    @apply border-insam-600 ring-4 ring-insam-100;
+  }
+}
+
+@layer components {
+  .ef-form input:not([type="hidden"]), .ef-form select, .ef-form textarea,
+  form:not(.unstyled) input:not([type="hidden"]), form:not(.unstyled) select, form:not(.unstyled) textarea {
+    @apply block w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 shadow-sm outline-none placeholder:text-slate-400;
+  }
+
+  .ef-form label, form:not(.unstyled) label {
+    @apply mb-2 block text-sm font-semibold text-slate-700;
+  }
+
+  .ef-form ul.errorlist, form:not(.unstyled) ul.errorlist {
+    @apply mt-2 list-none p-0 text-xs font-medium text-red-600;
+  }
+
+  .ef-page-rule {
+    @apply border-t border-slate-200;
+  }
+
+  .ef-glass {
+    @apply border border-white/60 bg-white/80 shadow-soft backdrop-blur-xl;
+  }
+
+  .ef-scrollbar::-webkit-scrollbar { width: 8px; height: 8px; }
+  .ef-scrollbar::-webkit-scrollbar-thumb { @apply rounded-full bg-slate-300; }
+}
+
+@keyframes ef-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-7px); }
+}
+
+@keyframes ef-pulse-ring {
+  0% { box-shadow: 0 0 0 0 rgba(228, 41, 73, .38); }
+  70% { box-shadow: 0 0 0 22px rgba(228, 41, 73, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(228, 41, 73, 0); }
+}
+
+.ef-float { animation: ef-float 5s ease-in-out infinite; }
+.ef-pulse-ring { animation: ef-pulse-ring 2.2s infinite; }
+
+.leaflet-container { z-index: 0; }
