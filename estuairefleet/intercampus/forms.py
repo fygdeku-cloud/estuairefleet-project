@@ -17,3 +17,7 @@ class CoursInterCampusForm(forms.ModelForm):
             "notify_before_minutes",
             "status",
         )
+        widgets = {
+            "start_at": forms.DateTimeInput(attrs={"type": "datetime-local"}),
+            "horaire_fin": forms.DateTimeInput(attrs={"type": "datetime-local"}),
+        }

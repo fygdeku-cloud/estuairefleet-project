@@ -1,3 +1,5 @@
+from django.core.exceptions import PermissionDenied, ValidationError
+from django.utils import timezone
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -13,9 +15,8 @@ from .serializers import SignalSerializer
 
 
 def _error(exc):
-    return Response(
-        {"code": getattr(exc, "code", "business_rule"), "detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST
-    )
+    error_status = status.HTTP_403_FORBIDDEN if isinstance(exc, PermissionDenied) else status.HTTP_400_BAD_REQUEST
+    return Response({"code": getattr(exc, "code", "business_rule"), "detail": str(exc)}, status=error_status)
 
 
 def _payload(item):
@@ -36,10 +37,18 @@ class SignalCollectionView(APIView):
                 accuracy=request.data.get("accuracy"),
                 trajet=trajet,
             )
-        except (BusinessRuleError, KeyError, ValueError, Trajet.DoesNotExist) as exc:
+        except (
+            BusinessRuleError,
+            PermissionDenied,
+            KeyError,
+            ValueError,
+            TypeError,
+            Trajet.DoesNotExist,
+            ValidationError,
+        ) as exc:
             return _error(exc)
         return Response(
-            {"id": signal.id, "status": signal.status, "expires_in_seconds": signal.seconds_left}, status=201
+            {"id": str(signal.id), "status": signal.status, "expires_in_seconds": signal.seconds_left}, status=201
         )
 
 
@@ -69,7 +78,7 @@ class VisibleSignalsView(APIView):
     def get(self, request):
         return Response(
             {
-                "server_time": __import__("django.utils.timezone", fromlist=["now"]).now(),
+                "server_time": timezone.now(),
                 "signals": [_payload(item) for item in get_visible_signals_for(request.user)],
             }
         )
@@ -90,7 +99,7 @@ class SignalActionView(APIView):
                 result = close_signal(signal=signal, by=request.user)
             else:
                 result = flag_false_signal(signal=signal, by=request.user)
-        except (BusinessRuleError, PermissionError, Signal.DoesNotExist) as exc:
+        except (BusinessRuleError, PermissionError, PermissionDenied, ValidationError, Signal.DoesNotExist) as exc:
             return _error(exc)
         return Response({"id": result.id, "status": result.status, "expires_in_seconds": result.seconds_left})
 

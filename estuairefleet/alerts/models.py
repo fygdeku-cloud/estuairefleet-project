@@ -39,6 +39,7 @@ class Alert(BaseModel):
         verbose_name = _("alerte")
         verbose_name_plural = _("alertes")
         constraints = [
+            models.CheckConstraint(condition=models.Q(threshold__gt=0), name="alert_threshold_positive"),
             models.UniqueConstraint(
                 fields=("route",),
                 condition=Q(
@@ -56,6 +57,12 @@ class Alert(BaseModel):
 
     def __str__(self):
         return f"{self.route} — {self.get_status_display()}"
+
+    def clean(self):
+        if self.threshold < 1:
+            raise ValidationError({"threshold": _("Le seuil doit être supérieur à zéro.")})
+        if self.priority and self.signal_count < self.threshold:
+            raise ValidationError({"priority": _("Une alerte prioritaire doit atteindre le seuil configuré.")})
 
     def mark_resolved(self):
         self.status = AlertStatus.RESOLVED

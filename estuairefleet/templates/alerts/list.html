@@ -1,0 +1,8 @@
+{% extends "base.html" %}
+{% block title %}Alertes — EstuaireFleet{% endblock %}
+{% block content %}
+<div class="ef-page-header"><div><p class="ef-kicker">Transport</p><h1>Alertes actives</h1><p class="ef-muted">Les responsables et chauffeurs voient uniquement les alertes de leur périmètre.</p></div></div>
+<section class="ef-card">
+  {% if alerts %}<ul class="ef-signal-list">{% for alert in alerts %}<li class="ef-signal-item"><div><strong>{{ alert.route.name }}</strong><div class="small ef-muted">{{ alert.signal_count }} signal{{ alert.signal_count|pluralize }} · {{ alert.get_status_display }}</div></div><div class="ef-actions"><span class="ef-badge{% if alert.priority %} ef-badge-warning{% endif %}">{% if alert.priority %}Prioritaire{% else %}Suivi{% endif %}</span><a class="ef-btn ef-btn-secondary ef-btn-sm" href="{% url 'alerts:detail' alert.pk %}">Ouvrir</a></div></li>{% endfor %}</ul>{% else %}<div class="ef-empty"><p>Aucune alerte active.</p></div>{% endif %}
+</section>
+{% endblock %}

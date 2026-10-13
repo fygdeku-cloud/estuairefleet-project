@@ -1,5 +1,8 @@
+from django.db import models
 from django.db.models import Count
 from django.utils import timezone
+
+from estuairefleet.core.geo import haversine_m
 
 from .models import Bus, Campus, Trajet
 
@@ -60,3 +63,19 @@ def get_free_chauffeurs():
     from estuairefleet.users.models import Chauffeur
 
     return Chauffeur.objects.select_related("user").filter(user__is_active=True, bus__isnull=True)
+
+
+def get_nearest_available_bus(*, latitude, longitude):
+    """Retourne le bus de relais le plus proche avec des places disponibles."""
+    candidates = Bus.objects.filter(
+        status__in=("disponible", "en_route"),
+        chauffeur__isnull=False,
+        places_occupees__lt=models.F("capacity"),
+        position_lat__isnull=False,
+        position_lng__isnull=False,
+    ).select_related("trajet", "chauffeur__user")
+    return min(
+        candidates,
+        key=lambda bus: haversine_m((latitude, longitude), (bus.position_lat, bus.position_lng)),
+        default=None,
+    )

@@ -1,0 +1,3 @@
+{% extends "base.html" %}
+{% block title %}Planifier un cours — EstuaireFleet{% endblock %}
+{% block content %}<div class="ef-page-header"><div><p class="ef-kicker">Inter-campus</p><h1>Planifier un cours</h1></div></div><section class="ef-card"><form method="post" class="ef-form">{% csrf_token %}{% for field in form %}<div class="ef-field"><label for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}{% for error in field.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}</div>{% endfor %}<button class="ef-btn ef-btn-primary" type="submit">Enregistrer</button></form></section>{% endblock %}

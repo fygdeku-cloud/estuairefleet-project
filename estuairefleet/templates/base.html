@@ -10,6 +10,9 @@
     <link rel="stylesheet" href="{% static 'vendor/bootstrap/bootstrap.min.css' %}">
     <link rel="stylesheet" href="{% static 'vendor/leaflet/leaflet.css' %}">
     <link rel="stylesheet" href="{% static 'css/design-system.css' %}">
+    <link rel="stylesheet" href="{% static 'css/domains/alerts.css' %}">
+    <link rel="stylesheet" href="{% static 'css/domains/intercampus.css' %}">
+    <link rel="stylesheet" href="{% static 'css/domains/notifications.css' %}">
     {% block extra_head %}{% endblock %}
   </head>
   <body>
@@ -20,9 +23,11 @@
         {% if request.user.is_authenticated %}
           <nav class="ef-nav-links" aria-label="Navigation principale">
             {% if request.user.role == 'student' %}<a href="{% url 'signals:home' %}">Mon signal</a>{% endif %}
-            {% if request.user.role == 'driver' %}<a href="{% url 'signals:driver_map' %}">Carte</a><a href="{% url 'fleet:my_bus' %}">Mon bus</a>{% endif %}
+            {% if request.user.role == 'driver' %}<a href="{% url 'signals:driver_map' %}">Carte</a><a href="{% url 'fleet:my_bus' %}">Mon bus</a><a href="{% url 'alerts:driver_list' %}">Alertes</a>{% endif %}
             {% if request.user.is_superuser or request.user.role == 'admin' or request.user.role == 'administrator' %}<a href="{% url 'core:dashboard' %}">Tableau de bord</a><a href="{% url 'fleet:overview' %}">Flotte</a>{% endif %}
-            {% if request.user.role == 'staff' or request.user.role == 'admin' or request.user.role == 'administrator' or request.user.is_superuser %}<a href="{% url 'signals:monitor' %}">Supervision</a>{% endif %}
+            {% if request.user.role == 'staff' or request.user.role == 'admin' or request.user.role == 'administrator' or request.user.is_superuser %}<a href="{% url 'signals:monitor' %}">Supervision</a><a href="{% url 'alerts:list' %}">Alertes</a><a href="{% url 'intercampus:manage' %}">Inter-campus</a>{% endif %}
+            <a href="{% url 'intercampus:list' %}">Cours</a>
+            <a href="{% url 'notifications:list' %}">Notifications</a>
             <a href="{{ request.user.get_absolute_url }}">Profil</a>
             <a class="ef-btn ef-btn-ghost ef-btn-sm" href="{% url 'users:logout' %}">Déconnexion</a>
           </nav>

@@ -1,12 +1,12 @@
 from datetime import timedelta
 
-from django.core.exceptions import PermissionDenied
+from django.core.exceptions import PermissionDenied, ValidationError
 from django.db import transaction
 from django.utils import timezone
 
 from estuairefleet.core import conf
 from estuairefleet.core.exceptions import InvalidBusTransition
-from estuairefleet.core.geo import haversine_m
+from estuairefleet.core.geo import haversine_m, is_valid_lat_lng
 
 from .models import Bus, BusStatus, Campus, Stop, Trajet
 
@@ -66,8 +66,9 @@ def update_trajet(*, trajet, stops=None, **data):
 
 @transaction.atomic
 def create_bus(**data):
-    bus = Bus.objects.create(**data)
+    bus = Bus(**data)
     bus.full_clean()
+    bus.save()
     return bus
 
 
@@ -121,6 +122,8 @@ def update_bus_position(*, bus, lat, lng, by):
     locked = Bus.objects.select_for_update().get(pk=bus.pk)
     if not _is_admin(by) and (not by or not getattr(by, "chauffeur", None) or locked.chauffeur_id != by.chauffeur.pk):
         raise PermissionDenied("Seul le chauffeur du bus peut partager sa position.")
+    if not is_valid_lat_lng(lat, lng):
+        raise ValidationError("La position du bus est invalide.")
     now = timezone.now()
     if locked.position_updated_at and (now - locked.position_updated_at).total_seconds() < 3:
         return locked

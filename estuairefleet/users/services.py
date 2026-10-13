@@ -115,7 +115,9 @@ def lift_suspension(*, student, by=None):
 
 
 @transaction.atomic
-def register_public_user(*, role, email, matricule, first_name, last_name, password="", password_hash=None, licence_number=""):
+def register_public_user(
+    *, role, email, matricule, first_name, last_name, password="", password_hash=None, licence_number=""
+):
     """Crée un compte public et le profil correspondant en une opération."""
     user = User.objects.create(
         email=email,

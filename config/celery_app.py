@@ -18,6 +18,10 @@ app.conf.beat_schedule = {
         "task": "estuairefleet.alerts.tasks.escalate_timed_out_alerts",
         "schedule": 60.0,
     },
+    "notify-upcoming-intercampus-courses": {
+        "task": "estuairefleet.intercampus.tasks.notify_upcoming_courses",
+        "schedule": 60.0,
+    },
 }
 
 

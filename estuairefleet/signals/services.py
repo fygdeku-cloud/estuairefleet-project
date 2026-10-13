@@ -48,6 +48,10 @@ def emit_signal(*, student, lat=None, lng=None, accuracy=None, trajet=None, rout
     if attempts >= 5:
         raise RateLimitExceeded("Trop de tentatives en une minute. Veuillez patienter.")
     cache.set(key, attempts + 1, timeout=60)
+    now = timezone.now()
+    Signal.objects.filter(student=locked_student, status=SignalStatus.ACTIF, expires_at__lte=now).update(
+        status=SignalStatus.EXPIRE, updated_at=now
+    )
     existing = get_active_signal_for_student(locked_student)
     if existing:
         if legacy_route:

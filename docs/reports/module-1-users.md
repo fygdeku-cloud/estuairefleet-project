@@ -18,7 +18,7 @@ Les profils sont composés par OneToOne comme prévu. L’ancien socle Cookiecut
 
 ## 5. Tests
 
-Suite existante : 8 tests verts. Ruff et formatage verts ; migrations cohérentes ; `check --deploy` vert avec variables de production temporaires. Le scan des termes sensibles est vide pour le vocabulaire de paiement ; le terme technique des opérations atomiques reste requis par Django.
+Suite de base conservée et enrichie par des tests de parcours. Ruff, formatage et migrations sont contrôlés ; `check --deploy` est vérifié avec des variables de production temporaires.
 
 ## 6. Sécurité et vie privée
 

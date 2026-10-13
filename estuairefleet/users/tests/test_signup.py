@@ -1,7 +1,8 @@
-from django.test import TestCase, override_settings
-from django.core import mail
-from django.urls import reverse
 import re
+
+from django.core import mail
+from django.test import TestCase, override_settings
+from django.urls import reverse
 
 from estuairefleet.users.models import Chauffeur, Student, User, UserRole
 
@@ -40,7 +41,6 @@ class StudentSignupTests(TestCase):
         self.assertContains(response, "Cette adresse e-mail est déjà utilisée.")
         self.assertEqual(User.objects.filter(email="student@example.test").count(), 1)
 
-
     def test_signup_creates_driver_profile_when_driver_is_selected(self):
         payload = {
             "role": "driver",
@@ -66,7 +66,9 @@ class StudentSignupTests(TestCase):
             role=UserRole.STUDENT,
             must_change_password=False,
         )
-        response = self.client.post(reverse("users:login"), {"username": user.email, "password": "UneBonnePhraseDePasse!2026"})
+        response = self.client.post(
+            reverse("users:login"), {"username": user.email, "password": "UneBonnePhraseDePasse!2026"}
+        )
         self.assertRedirects(response, reverse("users:otp_verify"), fetch_redirect_response=False)
         self.assertNotIn("_auth_user_id", self.client.session)
         code = re.search(r"\b(\d{6})\b", mail.outbox[-1].body).group(1)

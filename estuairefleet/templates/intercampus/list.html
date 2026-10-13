@@ -1,0 +1,3 @@
+{% extends "base.html" %}
+{% block title %}Cours inter-campus — EstuaireFleet{% endblock %}
+{% block content %}<div class="ef-page-header"><div><p class="ef-kicker">Planning</p><h1>Cours inter-campus</h1><p class="ef-muted">Les prochains déplacements entre campus.</p></div></div><section class="ef-card">{% if courses %}<ul class="ef-signal-list">{% for course in courses %}<li class="ef-signal-item"><div><strong>{{ course.group }}</strong><div class="small ef-muted">{{ course.campus_depart }} → {{ course.campus_arrivee }}</div></div><time datetime="{{ course.start_at|date:'c' }}">{{ course.start_at|date:"d/m/Y H:i" }}</time></li>{% endfor %}</ul>{% else %}<div class="ef-empty"><p>Aucun cours inter-campus planifié.</p></div>{% endif %}</section>{% endblock %}

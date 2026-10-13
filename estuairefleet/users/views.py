@@ -27,14 +27,15 @@ from estuairefleet.users.models import OTPPurpose, User
 from estuairefleet.users.permissions import OTPRequiredMixin
 from estuairefleet.users.services import issue_otp, register_public_user, verify_otp
 
-
 PENDING_OTP_SESSION_KEY = "pending_otp"
 PENDING_SIGNUP_SESSION_KEY = "pending_signup"
 OTP_VERIFIED_SESSION_KEY = "otp_verified_at"
 
 
 def _safe_next_url(request, candidate):
-    if candidate and url_has_allowed_host_and_scheme(candidate, {request.get_host()}, require_https=request.is_secure()):
+    if candidate and url_has_allowed_host_and_scheme(
+        candidate, {request.get_host()}, require_https=request.is_secure()
+    ):
         return candidate
     return reverse("core:home")
 
@@ -64,8 +65,10 @@ class IdentifierLoginView(LoginView):
         challenge = issue_otp(email=user.email, purpose=OTPPurpose.LOGIN, user=user)
         self.request.session["login_user_id"] = str(user.pk)
         self.request.session.modified = True
-        _begin_otp(self.request, challenge=challenge, purpose=OTPPurpose.LOGIN, next_url=self.request.POST.get("next", ""))
-        messages.info(self.request, "Un code de vérification vient d’être envoyé à votre adresse e-mail.")
+        _begin_otp(
+            self.request, challenge=challenge, purpose=OTPPurpose.LOGIN, next_url=self.request.POST.get("next", "")
+        )
+        messages.info(self.request, "Un code de vérification vient d'être envoyé à votre adresse e-mail.")
         return redirect("users:otp_verify")
 
 
@@ -94,7 +97,7 @@ class StudentSignupView(FormView):
         self.request.session[PENDING_SIGNUP_SESSION_KEY] = pending
         challenge = issue_otp(email=cleaned["email"], purpose=OTPPurpose.SIGNUP)
         _begin_otp(self.request, challenge=challenge, purpose=OTPPurpose.SIGNUP)
-        messages.info(self.request, "Vérifiez votre adresse e-mail avec le code reçu pour terminer l’inscription.")
+        messages.info(self.request, "Vérifiez votre adresse e-mail avec le code reçu pour terminer l'inscription.")
         return redirect("users:otp_verify")
 
 
@@ -120,7 +123,7 @@ class OTPVerifyView(FormView):
             challenge = self._resend(pending)
             if challenge:
                 _begin_otp(request, challenge=challenge, purpose=pending["purpose"], next_url=pending.get("next", ""))
-                messages.success(request, "Un nouveau code vient d’être envoyé.")
+                messages.success(request, "Un nouveau code vient d'être envoyé.")
             else:
                 messages.error(request, "Impossible de renvoyer le code. Recommencez le parcours.")
             return redirect("users:otp_verify")
@@ -182,6 +185,7 @@ class UserDetailView(LoginRequiredMixin, OTPRequiredMixin, DetailView):
             return redirect("users:login")
         if str(request.user.pk) != str(kwargs.get("pk")) and not request.user.is_superuser:
             from django.core.exceptions import PermissionDenied
+
             raise PermissionDenied
         return super().dispatch(request, *args, **kwargs)
 

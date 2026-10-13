@@ -10,4 +10,10 @@ router.register("users", UserViewSet)
 router.register("campuses", CampusViewSet)
 router.register("trajets", TrajetViewSet)
 router.register("buses", BusViewSet)
-urlpatterns = [*router.urls, path("signals/", include("estuairefleet.signals.api.urls"))]
+urlpatterns = [
+    *router.urls,
+    path("signals/", include("estuairefleet.signals.api.urls")),
+    path("alerts/", include("estuairefleet.alerts.api.urls")),
+    path("intercampus/", include("estuairefleet.intercampus.api.urls")),
+    path("notifications/", include("estuairefleet.notifications.api.urls")),
+]

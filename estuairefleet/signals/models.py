@@ -58,7 +58,7 @@ class Signal(BaseModel):
         ]
 
     def clean(self):
-        if self.status == SignalStatus.ACTIF and self.expires_at <= self.created_at:
+        if self.status == SignalStatus.ACTIF and self.created_at and self.expires_at <= self.created_at:
             raise ValidationError({"expires_at": _("Un signal actif doit expirer dans le futur.")})
 
     @property

@@ -13,7 +13,10 @@ urlpatterns = [
     path("users/", include("estuairefleet.users.urls", namespace="users")),
     path("signals/", include("estuairefleet.signals.urls", namespace="signals")),
     path("fleet/", include("estuairefleet.fleet.urls", namespace="fleet")),
-    # Les parcours publics passent tous par l’OTP et les profils métiers.
+    path("alerts/", include("estuairefleet.alerts.urls", namespace="alerts")),
+    path("intercampus/", include("estuairefleet.intercampus.urls", namespace="intercampus")),
+    path("notifications/", include("estuairefleet.notifications.urls", namespace="notifications")),
+    # Les parcours publics passent tous par l'OTP et les profils métiers.
     path("accounts/signup/", RedirectView.as_view(pattern_name="users:signup", permanent=False)),
     path("accounts/login/", RedirectView.as_view(pattern_name="users:login", permanent=False)),
     path("accounts/", include("allauth.urls")),

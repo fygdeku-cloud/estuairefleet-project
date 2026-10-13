@@ -68,7 +68,6 @@ THIRD_PARTY_APPS = [
     "crispy_bootstrap5",
     "allauth",
     "allauth.account",
-    "allauth.mfa",
     "allauth.socialaccount",
     "django_celery_beat",
     "rest_framework",

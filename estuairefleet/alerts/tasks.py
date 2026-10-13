@@ -9,8 +9,11 @@ from .services import escalate_alert
 def escalate_timed_out_alerts():
     alerts = Alert.objects.filter(
         status=AlertStatus.TRIGGERED,
+        response_deadline__isnull=False,
         response_deadline__lte=timezone.now(),
     )
+    count = 0
     for alert in alerts:
         escalate_alert(alert=alert)
-    return alerts.count()
+        count += 1
+    return count

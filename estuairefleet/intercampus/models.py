@@ -47,6 +47,16 @@ class CoursInterCampus(BaseModel):
         verbose_name = _("cours inter-campus")
         verbose_name_plural = _("cours inter-campus")
         ordering = ("start_at",)
+        constraints = [
+            models.CheckConstraint(
+                condition=~models.Q(campus_depart=models.F("campus_arrivee")),
+                name="intercampus_different_campuses",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(horaire_fin__gt=models.F("start_at")),
+                name="intercampus_end_after_start",
+            ),
+        ]
 
     def __str__(self):
         return f"{self.group} — {self.campus_depart} → {self.campus_arrivee}"

@@ -1,6 +1,7 @@
 from django.conf import settings
-from django.core.exceptions import PermissionDenied
 from django.contrib.auth.views import redirect_to_login
+from django.core.exceptions import PermissionDenied
+from django.shortcuts import redirect
 from django.utils import timezone
 from rest_framework.permissions import BasePermission
 
@@ -13,7 +14,10 @@ class OTPRequiredMixin:
             return redirect_to_login(request.get_full_path())
         verified_at = request.session.get("otp_verified_at")
         try:
-            otp_is_fresh = verified_at and timezone.now().timestamp() - int(verified_at) <= settings.ESTUAIREFLEET_OTP_SESSION_AGE_SECONDS
+            otp_is_fresh = (
+                verified_at
+                and timezone.now().timestamp() - int(verified_at) <= settings.ESTUAIREFLEET_OTP_SESSION_AGE_SECONDS
+            )
         except (TypeError, ValueError):
             otp_is_fresh = False
         if not otp_is_fresh:

@@ -1,0 +1,1 @@
+{% for field in form %}<div class="ef-field">{{ field.label_tag }}{{ field }}{% for error in field.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}</div>{% endfor %}
