@@ -4,12 +4,13 @@ from django.core.exceptions import PermissionDenied, ValidationError
 from django.db import transaction
 from django.utils import timezone
 
+from estuairefleet.core import conf
 from estuairefleet.core.constants import INTERMEDIATE_ALERT_DELAY
 from estuairefleet.notifications.services import create_in_app_notification
 from estuairefleet.signals.selectors import get_active_signals_for_trajet
 
-from .models import Alert, AlertResponse, AlertStatus, DriverResponseType
-from .selectors import OPEN_ALERT_STATUSES
+from .models import Alert, AlertRelayAttempt, AlertResponse, AlertStatus, DriverResponseType
+from .selectors import OPEN_ALERT_STATUSES, get_next_relay_bus, get_threshold_for_route
 
 
 def _is_transport_admin(user):
@@ -21,9 +22,10 @@ def evaluate_route_alert(*, route) -> Alert | None:
     locked_route = type(route).objects.select_for_update().get(pk=route.pk)
     active_signals = get_active_signals_for_trajet(locked_route).select_for_update()
     count = active_signals.count()
+    threshold = get_threshold_for_route(locked_route)
     oldest_waiting = active_signals.order_by("created_at").first()
     intermediate = bool(oldest_waiting and oldest_waiting.created_at <= timezone.now() - INTERMEDIATE_ALERT_DELAY)
-    if count < locked_route.seuil_alerte and not intermediate:
+    if count < threshold and not intermediate:
         return None
 
     alert = Alert.objects.select_for_update().filter(route=locked_route, status__in=OPEN_ALERT_STATUSES).first()
@@ -31,10 +33,11 @@ def evaluate_route_alert(*, route) -> Alert | None:
     if alert is None:
         alert = Alert.objects.create(
             route=locked_route,
-            threshold=locked_route.seuil_alerte,
+            threshold=threshold,
             status=AlertStatus.TRIGGERED,
-            priority=count >= locked_route.seuil_alerte,
-            response_deadline=now + timedelta(minutes=5),
+            priority=count >= threshold,
+            response_deadline=now + timedelta(minutes=conf.ALERT_RESPONSE_TIMEOUT_MINUTES),
+            triggered_at=now,
             signal_count=count,
         )
         drivers = [bus.chauffeur.user for bus in locked_route.buses.select_related("chauffeur__user") if bus.chauffeur]
@@ -47,7 +50,7 @@ def evaluate_route_alert(*, route) -> Alert | None:
             )
     else:
         alert.signal_count = count
-        alert.priority = alert.priority or count >= locked_route.seuil_alerte
+        alert.priority = alert.priority or count >= threshold
         alert.save(update_fields=["signal_count", "priority", "updated_at"])
     alert.signals.set(active_signals)
     return alert
@@ -56,9 +59,15 @@ def evaluate_route_alert(*, route) -> Alert | None:
 @transaction.atomic
 def respond_to_alert(*, alert: Alert, driver, response_type, eta_minutes=None, reason="", relay_bus=None):
     locked = Alert.objects.select_for_update().select_related("route").get(pk=alert.pk)
-    if not locked.route.buses.filter(chauffeur__user=driver).exists():
+    is_route_driver = locked.route.buses.filter(chauffeur__user=driver).exists()
+    is_relay_driver = bool(
+        locked.relay_bus_id
+        and locked.relay_bus.chauffeur
+        and locked.relay_bus.chauffeur.user_id == driver.pk
+    )
+    if not (is_route_driver or is_relay_driver):
         raise PermissionDenied("Cette alerte ne concerne pas votre bus.")
-    if locked.status not in (AlertStatus.TRIGGERED, AlertStatus.ESCALATED):
+    if locked.status not in (AlertStatus.TRIGGERED, AlertStatus.ESCALATED, AlertStatus.RELAY):
         raise ValidationError("Cette alerte n'accepte plus de réponse.")
     response = AlertResponse(
         alert=locked,
@@ -69,20 +78,67 @@ def respond_to_alert(*, alert: Alert, driver, response_type, eta_minutes=None, r
         relay_bus=relay_bus,
     )
     response.full_clean()
+    existing_response = AlertResponse.objects.filter(alert=locked).first()
+    if existing_response:
+        response.pk = existing_response.pk
+        response.responded_at = existing_response.responded_at
     response.save()
-    locked.status = AlertStatus.IN_PROGRESS
-    locked.save(update_fields=["status", "updated_at"])
+    if response_type == DriverResponseType.ARRIVING:
+        locked.status = AlertStatus.RESOLVED
+        locked.resolved_at = timezone.now()
+        locked.save(update_fields=["status", "resolved_at", "updated_at"])
+    else:
+        locked.status = AlertStatus.RELAY
+        locked.motif = reason
+        locked.relay_bus = relay_bus
+        locked.response_deadline = timezone.now() + timedelta(minutes=conf.ALERT_RESPONSE_TIMEOUT_MINUTES)
+        locked.save(update_fields=["status", "motif", "relay_bus", "response_deadline", "updated_at"])
+        if relay_bus and relay_bus.chauffeur:
+            AlertRelayAttempt.objects.get_or_create(alert=locked, bus=relay_bus)
+            create_in_app_notification(
+                recipient=relay_bus.chauffeur.user,
+                title="Demande de relais prioritaire",
+                message=f"Un relais est demandé pour le trajet {locked.route.name}.",
+                metadata={"alert_id": str(locked.pk), "relay": True},
+            )
     return response
 
 
 @transaction.atomic
 def escalate_alert(*, alert: Alert) -> Alert:
     locked = Alert.objects.select_for_update().get(pk=alert.pk)
-    if locked.status in (AlertStatus.RESOLVED, AlertStatus.ESCALATED):
+    if locked.status == AlertStatus.RESOLVED:
         return locked
+    if locked.status == AlertStatus.RELAY:
+        relay_bus = get_next_relay_bus(locked, excluded_ids=locked.relay_attempts.values_list("bus_id", flat=True))
+        if relay_bus:
+            locked.relay_bus = relay_bus
+            locked.response_deadline = timezone.now() + timedelta(minutes=conf.ALERT_RESPONSE_TIMEOUT_MINUTES)
+            locked.save(update_fields=["relay_bus", "response_deadline", "updated_at"])
+            AlertRelayAttempt.objects.get_or_create(alert=locked, bus=relay_bus)
+            return locked
     locked.status = AlertStatus.ESCALATED
     locked.escalated_at = timezone.now()
     locked.save(update_fields=["status", "escalated_at", "updated_at"])
+    return locked
+
+
+@transaction.atomic
+def respond_to_relay(*, alert, driver, accepted, reason=""):
+    locked = Alert.objects.select_for_update().select_related("relay_bus__chauffeur").get(pk=alert.pk)
+    if not locked.relay_bus or not locked.relay_bus.chauffeur or locked.relay_bus.chauffeur.user_id != driver.pk:
+        raise PermissionDenied("Cette demande de relais ne concerne pas votre bus.")
+    attempt = AlertRelayAttempt.objects.select_for_update().get(alert=locked, bus=locked.relay_bus)
+    attempt.accepted, attempt.reason, attempt.responded_at = accepted, reason, timezone.now()
+    attempt.save(update_fields=["accepted", "reason", "responded_at", "updated_at"])
+    if accepted:
+        locked.status = AlertStatus.RESOLVED
+        locked.resolved_at = timezone.now()
+        locked.save(update_fields=["status", "resolved_at", "updated_at"])
+    else:
+        locked.response_deadline = timezone.now()
+        locked.save(update_fields=["response_deadline", "updated_at"])
+        escalate_alert(alert=locked)
     return locked
 
 

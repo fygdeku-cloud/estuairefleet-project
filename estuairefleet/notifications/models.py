@@ -11,6 +11,19 @@ class NotificationChannel(models.TextChoices):
     SMS = "sms", _("SMS")
 
 
+class NotificationType(models.TextChoices):
+    INFORMATION = "information", _("Information")
+    BUS_APPROACHING = "bus_approaching", _("Bus en approche")
+    DELAY = "delay", _("Retard")
+    CANCELLATION = "cancellation", _("Annulation")
+    BUS_CHANGE = "bus_change", _("Changement de bus")
+    SIGNAL_TAKEN = "signal_taken", _("Signal pris en charge")
+    ALERT = "alert", _("Alerte")
+    ESCALATION = "escalation", _("Escalade")
+    INTERCAMPUS = "intercampus", _("Cours inter-campus")
+    ANNOUNCEMENT = "announcement", _("Annonce")
+
+
 class NotificationStatus(models.TextChoices):
     PENDING = "pending", _("En attente")
     SENT = "sent", _("Envoyée")
@@ -23,6 +36,9 @@ class Notification(BaseModel):
     )
     title = models.CharField(_("titre"), max_length=160)
     message = models.TextField(_("message"))
+    notification_type = models.CharField(
+        _("type"), max_length=32, choices=NotificationType.choices, default=NotificationType.INFORMATION
+    )
     channel = models.CharField(
         _("canal"), max_length=20, choices=NotificationChannel.choices, default=NotificationChannel.IN_APP
     )
@@ -47,3 +63,32 @@ class Notification(BaseModel):
     def mark_read(self):
         self.read_at = timezone.now()
         self.save(update_fields=["read_at", "updated_at"])
+
+    def markRead(self):
+        return self.mark_read()
+
+    @property
+    def read(self):
+        return self.read_at is not None
+
+
+class Announcement(BaseModel):
+    title = models.CharField(_("titre"), max_length=160)
+    message = models.TextField(_("message"))
+    audience = models.CharField(_("public"), max_length=32, default="all")
+    published_at = models.DateTimeField(_("publiée le"), null=True, blank=True)
+    is_active = models.BooleanField(_("active"), default=True)
+    created_by = models.ForeignKey(
+        "users.User", on_delete=models.SET_NULL, related_name="announcements", null=True, blank=True
+    )
+
+    class Meta:
+        verbose_name = _("annonce")
+        verbose_name_plural = _("annonces")
+        ordering = ("-published_at", "-created_at")
+
+    def publish(self):
+        self.published_at = timezone.now()
+        self.is_active = True
+        self.save(update_fields=["published_at", "is_active", "updated_at"])
+        return self

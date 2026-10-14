@@ -22,6 +22,15 @@ class UserAdmin(auth_admin.UserAdmin):
     add_fieldsets = (
         (None, {"classes": ("wide",), "fields": ("email", "matricule", "password1", "password2", "role")}),
     )
+    actions = ("activate_accounts", "suspend_accounts")
+
+    @admin.action(description="Activer les comptes sélectionnés")
+    def activate_accounts(self, request, queryset):
+        queryset.update(is_active=True)
+
+    @admin.action(description="Suspendre les comptes sélectionnés")
+    def suspend_accounts(self, request, queryset):
+        queryset.update(is_active=False)
 
 
 admin.site.register(Student)

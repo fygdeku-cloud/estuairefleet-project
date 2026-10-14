@@ -32,11 +32,12 @@ def get_active_signals_for_trajet(trajet):
 
 
 def get_active_signals_for_route(route_id):
-    """Alias de compatibilité pour les intégrations anciennes, sans exposer les données aux étudiants."""
-    return get_active_signals_for_trajet(route_id)
+    """Alias compatible avec un objet trajet ou son identifiant."""
+    trajet = route_id if hasattr(route_id, "pk") else Trajet.objects.get(pk=route_id)
+    return get_active_signals_for_trajet(trajet)
 
 
-def get_visible_signals_for(user):
+def get_visible_signals_for(user, *, since=None):
     now = timezone.now()
     queryset = Signal.objects.filter(status=SignalStatus.ACTIF, expires_at__gt=now).select_related(
         "student__user", "trajet", "student__campus"
@@ -47,6 +48,9 @@ def get_visible_signals_for(user):
     if user.role == "driver":
         bus = getattr(getattr(user, "chauffeur", None), "bus", None)
         own_trajet_id = bus.trajet_id if bus else None
+        queryset = queryset.filter(trajet_id=own_trajet_id) if own_trajet_id else queryset.none()
+    if since is not None:
+        queryset = queryset.filter(updated_at__gt=since)
     payload = []
     for signal in queryset:
         if user.role in {"admin", "administrator"}:
@@ -60,8 +64,8 @@ def get_visible_signals_for(user):
         payload.append(
             {
                 "id": signal.id,
-                "lat": signal.position_lat,
-                "lng": signal.position_lng,
+                "lat": float(signal.position_lat),
+                "lng": float(signal.position_lng),
                 "trajet_id": signal.trajet_id,
                 "trajet_name": signal.trajet.name,
                 "age_seconds": signal.age_seconds,
@@ -70,6 +74,7 @@ def get_visible_signals_for(user):
                 "student_label": label,
                 "student_id": signal.student_id if user.role in {"admin", "administrator"} else None,
                 "signal": signal,
+                "updated_at": signal.updated_at,
             }
         )
     return sorted(payload, key=lambda item: (not item["priority"], item["age_seconds"]))

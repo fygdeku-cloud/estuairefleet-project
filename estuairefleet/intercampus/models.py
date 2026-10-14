@@ -12,6 +12,13 @@ class IntercampusCourseStatus(models.TextChoices):
     CANCELLED = "cancelled", _("Annulé")
 
 
+class CourseChangeType(models.TextChoices):
+    NONE = "none", _("Aucun changement")
+    ADVANCED = "advanced", _("Avancé")
+    EXTENDED = "extended", _("Prolongé")
+    CANCELLED = "cancelled", _("Annulé")
+
+
 class CoursInterCampus(BaseModel):
     group = models.CharField(_("groupe"), max_length=120)
     campus_depart = models.ForeignKey(
@@ -42,6 +49,12 @@ class CoursInterCampus(BaseModel):
         _("statut"), max_length=20, choices=IntercampusCourseStatus.choices, default=IntercampusCourseStatus.PLANNED
     )
     driver_notified_at = models.DateTimeField(_("chauffeur notifié le"), null=True, blank=True)
+    reminder_sent_at = models.DateTimeField(_("rappel envoyé le"), null=True, blank=True)
+    change_type = models.CharField(
+        _("type de changement"), max_length=20, choices=CourseChangeType.choices, default=CourseChangeType.NONE
+    )
+    change_note = models.TextField(_("note de changement"), blank=True)
+    last_changed_at = models.DateTimeField(_("modifié métier le"), null=True, blank=True)
 
     class Meta:
         verbose_name = _("cours inter-campus")

@@ -8,13 +8,13 @@ from estuairefleet.core import conf
 from estuairefleet.core.exceptions import InvalidBusTransition
 from estuairefleet.core.geo import haversine_m, is_valid_lat_lng
 
-from .models import Bus, BusStatus, Campus, Stop, Trajet
+from .models import Bus, BusStatus, Campus, Incident, IncidentStatus, Stop, Trajet
 
 STATUS_TRANSITIONS = {
     BusStatus.HORS_SERVICE: {BusStatus.DISPONIBLE},
     BusStatus.DISPONIBLE: {BusStatus.EN_ROUTE, BusStatus.INDISPONIBLE, BusStatus.HORS_SERVICE},
     BusStatus.EN_ROUTE: {BusStatus.DISPONIBLE, BusStatus.PLEIN, BusStatus.INDISPONIBLE},
-    BusStatus.PLEIN: {BusStatus.DISPONIBLE, BusStatus.EN_ROUTE},
+    BusStatus.PLEIN: {BusStatus.DISPONIBLE},
     BusStatus.INDISPONIBLE: {BusStatus.DISPONIBLE, BusStatus.HORS_SERVICE},
 }
 
@@ -139,13 +139,38 @@ def set_bus_occupancy(*, bus, places, by):
         raise PermissionDenied("Seul le chauffeur du bus peut modifier les places occupées.")
     if places < 0 or places > locked.capacity:
         raise ValueError("Le nombre de places doit rester compris entre zéro et la capacité.")
+    previous_status = locked.status
     locked.places_occupees = places
     if places == locked.capacity and locked.status == BusStatus.EN_ROUTE:
         locked.status = BusStatus.PLEIN
     elif places < locked.capacity and locked.status == BusStatus.PLEIN:
-        locked.status = BusStatus.EN_ROUTE
-    locked.status_changed_at = timezone.now()
+        locked.status = BusStatus.DISPONIBLE
+    if locked.status != previous_status:
+        locked.status_changed_at = timezone.now()
     locked.save(update_fields=["places_occupees", "status", "status_changed_at", "updated_at"])
+    return locked
+
+
+@transaction.atomic
+def report_incident(*, incident=None, by=None, **data):
+    if incident is None:
+        incident = Incident(**data, reported_by=by)
+        incident.full_clean()
+        incident.save()
+        return incident
+    locked = Incident.objects.select_for_update().get(pk=incident.pk)
+    for key, value in data.items():
+        setattr(locked, key, value)
+    locked.full_clean()
+    locked.save()
+    return locked
+
+
+@transaction.atomic
+def resolve_incident(*, incident, by=None):
+    locked = Incident.objects.select_for_update().get(pk=incident.pk)
+    if locked.status != IncidentStatus.RESOLU:
+        locked.resolve(by=by)
     return locked
 
 

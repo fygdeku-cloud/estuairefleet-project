@@ -11,6 +11,7 @@ class AlertStatus(models.TextChoices):
     PENDING = "pending", _("En attente")
     TRIGGERED = "triggered", _("Déclenchée")
     IN_PROGRESS = "in_progress", _("En cours")
+    RELAY = "relay", _("Relais")
     RESOLVED = "resolved", _("Résolue")
     ESCALATED = "escalated", _("Escalade")
 
@@ -32,6 +33,16 @@ class Alert(BaseModel):
     signal_count = models.PositiveIntegerField(_("nombre de signaux"), default=0)
     priority = models.BooleanField(_("prioritaire"), default=False)
     response_deadline = models.DateTimeField(_("délai de réponse"), null=True, blank=True)
+    triggered_at = models.DateTimeField(_("déclenchée le"), null=True, blank=True)
+    motif = models.TextField(_("motif"), blank=True)
+    relay_bus = models.ForeignKey(
+        "fleet.Bus",
+        on_delete=models.SET_NULL,
+        related_name="relay_alerts",
+        null=True,
+        blank=True,
+        verbose_name=_("bus relais actuel"),
+    )
     escalated_at = models.DateTimeField(_("escaladée le"), null=True, blank=True)
     resolved_at = models.DateTimeField(_("résolue le"), null=True, blank=True)
 
@@ -47,6 +58,7 @@ class Alert(BaseModel):
                         AlertStatus.PENDING,
                         AlertStatus.TRIGGERED,
                         AlertStatus.IN_PROGRESS,
+                    AlertStatus.RELAY,
                         AlertStatus.ESCALATED,
                     ]
                 ),
@@ -99,3 +111,45 @@ class AlertResponse(BaseModel):
             raise ValidationError({"reason": _("Un motif est obligatoire si le chauffeur est indisponible.")})
         if self.response_type == DriverResponseType.UNAVAILABLE and not self.relay_bus_id:
             raise ValidationError({"relay_bus": _("Un bus relais doit être proposé.")})
+
+
+class AlertThresholdSchedule(BaseModel):
+    route = models.ForeignKey(
+        "fleet.Trajet", on_delete=models.CASCADE, related_name="alert_threshold_schedules", verbose_name=_("trajet")
+    )
+    start_time = models.TimeField(_("début de tranche"))
+    end_time = models.TimeField(_("fin de tranche"))
+    threshold = models.PositiveIntegerField(_("seuil"))
+    is_active = models.BooleanField(_("actif"), default=True)
+
+    class Meta:
+        verbose_name = _("seuil d'alerte par tranche")
+        verbose_name_plural = _("seuils d'alerte par tranche")
+        ordering = ("route", "start_time")
+        constraints = [models.CheckConstraint(condition=models.Q(threshold__gt=0), name="schedule_threshold_positive")]
+
+    def clean(self):
+        if self.threshold < 1:
+            raise ValidationError({"threshold": _("Le seuil doit être supérieur à zéro.")})
+        if self.start_time == self.end_time:
+            raise ValidationError(_("La tranche horaire doit avoir une durée positive."))
+
+    def matches(self, current_time):
+        return (
+            self.start_time <= current_time <= self.end_time
+            if self.start_time <= self.end_time
+            else current_time >= self.start_time or current_time <= self.end_time
+        )
+
+
+class AlertRelayAttempt(BaseModel):
+    alert = models.ForeignKey(Alert, on_delete=models.CASCADE, related_name="relay_attempts", verbose_name=_("alerte"))
+    bus = models.ForeignKey("fleet.Bus", on_delete=models.PROTECT, related_name="relay_attempts")
+    accepted = models.BooleanField(_("accepté"), null=True, blank=True)
+    reason = models.TextField(_("motif"), blank=True)
+    responded_at = models.DateTimeField(_("répondu le"), null=True, blank=True)
+
+    class Meta:
+        verbose_name = _("tentative de relais")
+        verbose_name_plural = _("tentatives de relais")
+        constraints = [models.UniqueConstraint(fields=("alert", "bus"), name="unique_alert_relay_bus")]

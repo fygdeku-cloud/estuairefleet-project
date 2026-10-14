@@ -18,5 +18,8 @@ class CoursInterCampusSerializer(serializers.ModelSerializer):
             "notify_before_minutes",
             "status",
             "driver_notified_at",
+            "reminder_sent_at",
+            "change_type",
+            "change_note",
         )
-        read_only_fields = ("id", "driver_notified_at")
+        read_only_fields = ("id", "driver_notified_at", "reminder_sent_at", "last_changed_at")

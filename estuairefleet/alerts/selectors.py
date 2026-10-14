@@ -4,12 +4,13 @@ from django.utils import timezone
 from estuairefleet.fleet.selectors import get_nearest_available_bus
 from estuairefleet.signals.models import SignalStatus
 
-from .models import Alert, AlertStatus
+from .models import Alert, AlertStatus, AlertThresholdSchedule
 
 OPEN_ALERT_STATUSES = (
     AlertStatus.PENDING,
     AlertStatus.TRIGGERED,
     AlertStatus.IN_PROGRESS,
+    AlertStatus.RELAY,
     AlertStatus.ESCALATED,
 )
 
@@ -38,3 +39,21 @@ def get_alert_detail(alert_id, *, driver=None) -> Alert:
     if driver is not None:
         queryset = queryset.filter(route__buses__chauffeur__user=driver)
     return queryset.get(pk=alert_id)
+
+
+def get_threshold_for_route(route, *, at=None):
+    at = at or timezone.localtime()
+    for schedule in AlertThresholdSchedule.objects.filter(route=route, is_active=True).order_by("start_time"):
+        if schedule.matches(at.time()):
+            return schedule.threshold
+    return route.seuil_alerte
+
+
+def get_next_relay_bus(alert, *, excluded_ids=()):
+    from estuairefleet.fleet.selectors import get_nearest_available_bus
+
+    signal = alert.signals.filter(status=SignalStatus.ACTIF).order_by("created_at").first()
+    if not signal:
+        return None
+    candidate = get_nearest_available_bus(latitude=signal.position_lat, longitude=signal.position_lng)
+    return candidate if candidate and candidate.pk not in set(excluded_ids) else None

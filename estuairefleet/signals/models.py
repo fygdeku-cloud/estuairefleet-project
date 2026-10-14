@@ -4,6 +4,7 @@ from django.db.models import Q
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 
+from estuairefleet.core.geo import is_valid_lat_lng
 from estuairefleet.core.models import BaseModel
 
 
@@ -25,7 +26,7 @@ class Signal(BaseModel):
     position_lat = models.DecimalField(_("latitude"), max_digits=9, decimal_places=6, null=True, blank=True)
     position_lng = models.DecimalField(_("longitude"), max_digits=9, decimal_places=6, null=True, blank=True)
     accuracy_m = models.FloatField(_("précision GPS (m)"), null=True, blank=True)
-    status = models.CharField(_("statut"), max_length=20, choices=SignalStatus.choices, default=SignalStatus.ACTIF)
+    status = models.CharField(_("statut"), max_length=20, choices=SignalStatus.choices, default=SignalStatus.INACTIF)
     expires_at = models.DateTimeField(_("expire le"))
     renewed_count = models.PositiveIntegerField(_("renouvellements"), default=0)
     taken_at = models.DateTimeField(_("pris en charge le"), null=True, blank=True)
@@ -58,6 +59,10 @@ class Signal(BaseModel):
         ]
 
     def clean(self):
+        if (self.position_lat is None or self.position_lng is None) or not is_valid_lat_lng(
+            self.position_lat, self.position_lng
+        ):
+            raise ValidationError(_("La position du signal est invalide."))
         if self.status == SignalStatus.ACTIF and self.created_at and self.expires_at <= self.created_at:
             raise ValidationError({"expires_at": _("Un signal actif doit expirer dans le futur.")})
 

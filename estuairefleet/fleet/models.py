@@ -29,6 +29,19 @@ class BusStatus(models.TextChoices):
     INDISPONIBLE = "indisponible", _("Indisponible")
 
 
+class IncidentType(models.TextChoices):
+    PANNE = "panne", _("Panne")
+    RETARD = "retard", _("Retard")
+    ACCIDENT = "accident", _("Accident")
+    AUTRE = "autre", _("Autre")
+
+
+class IncidentStatus(models.TextChoices):
+    OUVERT = "ouvert", _("Ouvert")
+    EN_COURS = "en_cours", _("En cours")
+    RESOLU = "resolu", _("Résolu")
+
+
 class Campus(BaseModel):
     name = models.CharField(_("nom"), max_length=120)
     code = models.SlugField(_("code"), max_length=32, unique=True)
@@ -93,6 +106,8 @@ class Trajet(BaseModel):
     def clean(self):
         if self.seuil_alerte < 1:
             raise ValidationError({"seuil_alerte": _("Le seuil doit être supérieur à zéro.")})
+        if self.signal_ttl_minutes < 1:
+            raise ValidationError({"signal_ttl_minutes": _("La durée de vie doit être supérieure à zéro.")})
         if self.service_start and self.service_end and self.service_start == self.service_end:
             raise ValidationError({"service_end": _("La plage horaire doit avoir une durée positive.")})
 
@@ -146,6 +161,10 @@ class Stop(BaseModel):
     @property
     def point(self):
         return float(self.latitude), float(self.longitude)
+
+    def clean(self):
+        if not is_valid_lat_lng(self.latitude, self.longitude):
+            raise ValidationError(_("Les coordonnées de l'arrêt sont invalides."))
 
     def __str__(self):
         return f"{self.order}. {self.name}"
@@ -232,3 +251,46 @@ class Bus(BaseModel):
 
     def __str__(self):
         return self.label or self.plate_number
+
+
+class Incident(BaseModel):
+    bus = models.ForeignKey(
+        Bus, on_delete=models.SET_NULL, related_name="incidents", null=True, blank=True, verbose_name=_("bus")
+    )
+    trajet = models.ForeignKey(
+        Trajet,
+        on_delete=models.SET_NULL,
+        related_name="incidents",
+        null=True,
+        blank=True,
+        verbose_name=_("trajet"),
+    )
+    type = models.CharField(_("type"), max_length=20, choices=IncidentType.choices)
+    description = models.TextField(_("description"))
+    status = models.CharField(
+        _("statut"), max_length=20, choices=IncidentStatus.choices, default=IncidentStatus.OUVERT
+    )
+    reported_at = models.DateTimeField(_("signalé le"), default=timezone.now)
+    reported_by = models.ForeignKey(
+        "users.User", on_delete=models.SET_NULL, related_name="reported_incidents", null=True, blank=True
+    )
+    resolved_at = models.DateTimeField(_("résolu le"), null=True, blank=True)
+    resolved_by = models.ForeignKey(
+        "users.User", on_delete=models.SET_NULL, related_name="resolved_incidents", null=True, blank=True
+    )
+
+    class Meta:
+        verbose_name = _("incident")
+        verbose_name_plural = _("incidents")
+        ordering = ("-reported_at",)
+        indexes = [models.Index(fields=("status", "reported_at"))]
+
+    def resolve(self, *, by=None):
+        self.status = IncidentStatus.RESOLU
+        self.resolved_at = timezone.now()
+        self.resolved_by = by
+        self.save(update_fields=["status", "resolved_at", "resolved_by", "updated_at"])
+        return self
+
+    def __str__(self):
+        return f"{self.get_type_display()} — {self.get_status_display()}"

@@ -1,7 +1,7 @@
 from datetime import timedelta
 
 from django.core.cache import cache
-from django.core.exceptions import PermissionDenied
+from django.core.exceptions import PermissionDenied, ValidationError
 from django.db import IntegrityError, connections, transaction
 from django.utils import timezone
 
@@ -43,6 +43,8 @@ def emit_signal(*, student, lat=None, lng=None, accuracy=None, trajet=None, rout
     if locked_student.is_signal_suspended:
         end = timezone.localtime(locked_student.signals_suspended_until)
         raise PermissionDenied(f"Les signaux sont suspendus jusqu'au {end:%d/%m/%Y à %H:%M}.")
+    if lat is None or lng is None or not (-90 <= float(lat) <= 90 and -180 <= float(lng) <= 180):
+        raise ValidationError("Une position GPS valide est obligatoire pour émettre un signal.")
     key = f"signal-attempts:{locked_student.pk}:{timezone.now():%Y%m%d%H%M}"
     attempts = cache.get(key, 0)
     if attempts >= 5:
@@ -82,6 +84,9 @@ def emit_signal(*, student, lat=None, lng=None, accuracy=None, trajet=None, rout
         raise ActiveSignalExists("Vous avez déjà un signal actif.") from exc
     _notify(signal_emitted, signal)
     _notify(signal_state_changed, signal)
+    from estuairefleet.alerts.services import evaluate_route_alert
+
+    evaluate_route_alert(route=trajet)
     return signal
 
 
@@ -158,6 +163,7 @@ def expire_stale_signals(now=None):
     for signal in signals:
         signal.status = SignalStatus.EXPIRE
         signal.save(update_fields=["status", "updated_at"])
+        _notify(signal_state_changed, signal)
     return len(signals)
 
 

@@ -4,7 +4,7 @@ from django.contrib.auth import forms as admin_forms
 from django.contrib.auth.password_validation import validate_password
 from django.utils.translation import gettext_lazy as _
 
-from .models import Chauffeur, User, UserRole
+from .models import Chauffeur, Student, User, UserRole
 
 
 class UserAdminChangeForm(admin_forms.UserChangeForm):
@@ -103,3 +103,21 @@ class OTPVerificationForm(forms.Form):
         strip=True,
         widget=forms.TextInput(attrs={"inputmode": "numeric", "autocomplete": "one-time-code"}),
     )
+
+
+class LocationConsentForm(forms.Form):
+    consent_location = forms.BooleanField(
+        label=_("J'autorise EstuaireFleet à utiliser ma position pendant la durée de mon signal."),
+        required=True,
+    )
+
+
+class StudentProfileForm(forms.ModelForm):
+    class Meta:
+        model = Student
+        fields = ("campus", "trajets_habituels", "consent_location")
+        labels = {
+            "campus": _("Campus de référence"),
+            "trajets_habituels": _("Trajets habituels"),
+            "consent_location": _("Autoriser la géolocalisation"),
+        }

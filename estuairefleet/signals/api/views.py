@@ -1,5 +1,6 @@
 from django.core.exceptions import PermissionDenied, ValidationError
 from django.utils import timezone
+from django.utils.dateparse import parse_datetime
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -76,10 +77,11 @@ class VisibleSignalsView(APIView):
     permission_classes = [IsNotStudent]
 
     def get(self, request):
+        since = parse_datetime(request.query_params.get("since", "")) if request.query_params.get("since") else None
         return Response(
             {
                 "server_time": timezone.now(),
-                "signals": [_payload(item) for item in get_visible_signals_for(request.user)],
+                "signals": [_payload(item) for item in get_visible_signals_for(request.user, since=since)],
             }
         )
 

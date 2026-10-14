@@ -4,6 +4,7 @@ from datetime import timedelta
 
 from django.conf import settings
 from django.contrib.auth.hashers import check_password, make_password
+from django.core.exceptions import PermissionDenied
 from django.core.mail import send_mail
 from django.db import transaction
 from django.utils import timezone
@@ -15,6 +16,15 @@ from .models import Administrateur, Chauffeur, OTPChallenge, OTPPurpose, Personn
 
 def _temporary_password(length=12):
     return "".join(secrets.choice(string.ascii_letters + string.digits) for _ in range(length))
+
+
+def _is_account_admin(user):
+    return bool(user and (user.is_superuser or user.role in {UserRole.ADMIN, "administrator"}))
+
+
+def _ensure_account_admin(by):
+    if by is not None and not _is_account_admin(by):
+        raise PermissionDenied("Seul un administrateur peut gérer les comptes.")
 
 
 @transaction.atomic
@@ -43,16 +53,20 @@ def create_user_with_profile(
         raise ValueError("Rôle inconnu.")
     if role == UserRole.STUDENT and not (matricule or profile_data.get("matricule")):
         raise ValueError("Le matricule est obligatoire pour un étudiant.")
+    profile_data.pop("matricule", None)
     profile_model.objects.create(user=user, **profile_data)
     return user, temporary_password
 
 
 @transaction.atomic
 def update_user_and_profile(*, user, by=None, **data):
+    _ensure_account_admin(by)
+    user = User.objects.select_for_update().get(pk=user.pk)
     profile_data = data.pop("profile", {})
     for field in ("first_name", "last_name", "phone_number", "email", "matricule", "is_active"):
         if field in data:
             setattr(user, field, data[field])
+    user.full_clean()
     user.save()
     relation = {"student": "student", "driver": "chauffeur", "admin": "administrateur", "staff": "personnel"}[
         user.role
@@ -67,6 +81,8 @@ def update_user_and_profile(*, user, by=None, **data):
 
 @transaction.atomic
 def set_user_active(*, user, active, by=None):
+    _ensure_account_admin(by)
+    user = User.objects.select_for_update().get(pk=user.pk)
     user.is_active = active
     user.save(update_fields=["is_active", "updated_at"])
     return user
@@ -75,6 +91,8 @@ def set_user_active(*, user, active, by=None):
 @transaction.atomic
 def reset_user_password(*, user, by=None):
     """Génère un secret temporaire affichable une seule fois."""
+    _ensure_account_admin(by)
+    user = User.objects.select_for_update().get(pk=user.pk)
     temporary_password = _temporary_password()
     user.password = make_password(temporary_password)
     user.must_change_password = True
@@ -92,8 +110,18 @@ def change_password(*, user, new_password):
 
 @transaction.atomic
 def record_location_consent(*, student):
+    student = Student.objects.select_for_update().get(pk=student.pk)
     student.location_consent_at = timezone.now()
     student.consent_location = True
+    student.save(update_fields=["location_consent_at", "consent_location", "updated_at"])
+    return student
+
+
+@transaction.atomic
+def revoke_location_consent(*, student):
+    student = Student.objects.select_for_update().get(pk=student.pk)
+    student.location_consent_at = None
+    student.consent_location = False
     student.save(update_fields=["location_consent_at", "consent_location", "updated_at"])
     return student
 
@@ -109,6 +137,8 @@ def register_abuse_warning(*, student):
 
 @transaction.atomic
 def lift_suspension(*, student, by=None):
+    _ensure_account_admin(by)
+    student = Student.objects.select_for_update().get(pk=student.pk)
     student.signals_suspended_until = None
     student.save(update_fields=["signals_suspended_until", "updated_at"])
     return student
