@@ -127,6 +127,19 @@ def revoke_location_consent(*, student):
 
 
 @transaction.atomic
+def update_student_profile(*, student, campus=None, trajets_habituels=None, consent_location=False):
+    """Met à jour le profil étudiant et trace explicitement le choix de localisation."""
+    locked = Student.objects.select_for_update().get(pk=student.pk)
+    locked.campus = campus
+    locked.consent_location = consent_location
+    locked.location_consent_at = timezone.now() if consent_location else None
+    locked.save(update_fields=["campus", "consent_location", "location_consent_at", "updated_at"])
+    if trajets_habituels is not None:
+        locked.trajets_habituels.set(trajets_habituels)
+    return locked
+
+
+@transaction.atomic
 def register_abuse_warning(*, student):
     student.abuse_warnings += 1
     if student.abuse_warnings >= conf.ABUSE_WARNINGS_BEFORE_SUSPENSION:

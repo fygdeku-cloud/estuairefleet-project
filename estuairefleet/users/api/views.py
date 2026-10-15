@@ -2,9 +2,10 @@ from rest_framework import decorators, status, viewsets
 from rest_framework.response import Response
 
 from estuairefleet.users.models import User
-from estuairefleet.users.services import record_location_consent
+from estuairefleet.users.permissions import IsTransportAdmin
+from estuairefleet.users.services import record_location_consent, set_user_active
 
-from .serializers import UserSerializer
+from .serializers import AccountAdminSerializer, UserSerializer
 
 
 class UserViewSet(viewsets.ReadOnlyModelViewSet):
@@ -12,7 +13,25 @@ class UserViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = User.objects.all()
 
     def get_queryset(self):
+        if self.request.user.is_superuser or self.request.user.role in {"admin", "administrator"}:
+            return self.queryset
         return self.queryset.filter(pk=self.request.user.pk)
+
+    def get_serializer_class(self):
+        return AccountAdminSerializer if self.request.user.role in {"admin", "administrator"} else UserSerializer
+
+    def get_permissions(self):
+        if self.action in {"activate", "suspend"}:
+            return [IsTransportAdmin()]
+        return super().get_permissions()
+
+    @decorators.action(detail=True, methods=["post"], permission_classes=[IsTransportAdmin])
+    def activate(self, request, pk=None):
+        return Response(AccountAdminSerializer(set_user_active(user=self.get_object(), active=True, by=request.user)).data)
+
+    @decorators.action(detail=True, methods=["post"], permission_classes=[IsTransportAdmin])
+    def suspend(self, request, pk=None):
+        return Response(AccountAdminSerializer(set_user_active(user=self.get_object(), active=False, by=request.user)).data)
 
     @decorators.action(detail=False, methods=["post"])
     def consent(self, request):

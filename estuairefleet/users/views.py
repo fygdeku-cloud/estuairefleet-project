@@ -22,7 +22,7 @@ from django.utils import timezone
 from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.generic import DetailView, FormView, RedirectView, UpdateView
 
-from estuairefleet.users.forms import OTPVerificationForm, PublicSignupForm
+from estuairefleet.users.forms import OTPVerificationForm, PublicSignupForm, StudentProfileForm
 from estuairefleet.users.models import OTPPurpose, User
 from estuairefleet.users.permissions import OTPRequiredMixin
 from estuairefleet.users.services import issue_otp, register_public_user, verify_otp
@@ -208,6 +208,29 @@ class UserUpdateView(LoginRequiredMixin, OTPRequiredMixin, SuccessMessageMixin, 
 
     def get_object(self, queryset=None):
         return self.request.user
+
+    def get_profile_form(self):
+        if self.request.user.role == "student" and hasattr(self.request.user, "student"):
+            return StudentProfileForm(instance=self.request.user.student, prefix="profile")
+        return None
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["profile_form"] = kwargs.get("profile_form") or self.get_profile_form()
+        return context
+
+    def post(self, request, *args, **kwargs):
+        self.object = self.get_object()
+        form = self.get_form()
+        profile_form = self.get_profile_form()
+        if profile_form is not None:
+            profile_form = StudentProfileForm(request.POST, instance=self.object.student, prefix="profile")
+        if form.is_valid() and (profile_form is None or profile_form.is_valid()):
+            self.object = form.save()
+            if profile_form is not None:
+                profile_form.save()
+            return self.form_valid(form)
+        return self.render_to_response(self.get_context_data(form=form, profile_form=profile_form))
 
     def get_success_url(self):
         return self.request.user.get_absolute_url()

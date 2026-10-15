@@ -5,6 +5,7 @@ from django.contrib.auth.password_validation import validate_password
 from django.utils.translation import gettext_lazy as _
 
 from .models import Chauffeur, Student, User, UserRole
+from .services import update_student_profile
 
 
 class UserAdminChangeForm(admin_forms.UserChangeForm):
@@ -121,3 +122,13 @@ class StudentProfileForm(forms.ModelForm):
             "trajets_habituels": _("Trajets habituels"),
             "consent_location": _("Autoriser la géolocalisation"),
         }
+
+    def save(self, commit=True):
+        if not commit:
+            return super().save(commit=False)
+        return update_student_profile(
+            student=self.instance,
+            campus=self.cleaned_data.get("campus"),
+            trajets_habituels=self.cleaned_data.get("trajets_habituels"),
+            consent_location=self.cleaned_data.get("consent_location", False),
+        )

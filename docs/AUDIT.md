@@ -1,6 +1,6 @@
 # Audit initial — EstuaireFleet
 
-Date : 14 octobre 2026
+Date : 16 octobre 2026
 
 ## 1. Périmètre et sources
 
@@ -125,7 +125,7 @@ Légende : 0 = absent, partiel = présent mais incomplet ou non conforme aux exi
 
 ## 6. Migrations et état de départ
 
-Les migrations existent pour toutes les apps métier, avec plusieurs migrations correctives. La cohérence finale ne peut pas être certifiée par `makemigrations --check` dans l’environnement initial, car l’interpréteur `.venv/bin/python3` est un lien vers un environnement appartenant à `root` et retourne `Permission denied`. Les migrations devront être revalidées après réparation de l’environnement Python.
+Les migrations existent pour toutes les apps métier, avec plusieurs migrations correctives. Le `.venv` du dépôt est un lien vers un interpréteur appartenant à `root` et retourne `Permission denied`; un environnement uv isolé a donc été créé sous `/tmp/estuairefleet-venv` pour les contrôles.
 
 Le build Tailwind npm se lance et reconstruit le fichier CSS minifié ; il signale seulement une base Browserslist ancienne.
 
@@ -133,12 +133,12 @@ Le build Tailwind npm se lance et reconstruit le fichier CSS minifié ; il signa
 
 | Contrôle | Résultat initial |
 | --- | --- |
-| `uv run python manage.py check` | bloqué par `.venv` non lisible |
-| `uv run pytest` | bloqué par `.venv` non lisible |
-| `uv run ruff check .` | bloqué par `.venv` non lisible |
-| `uv run ruff format --check .` | bloqué par `.venv` non lisible |
-| `uv run python manage.py makemigrations --check --dry-run` | bloqué par `.venv` non lisible |
-| `npm run build:css` | lancé avec avertissement Browserslist |
+| `/tmp/estuairefleet-venv/bin/python manage.py check` | OK, 0 problème |
+| `/tmp/estuairefleet-venv/bin/pytest -q` | 20 OK, 1 échec sur l’état attendu de réponse d’alerte |
+| `/tmp/estuairefleet-venv/bin/ruff check .` | 1 erreur (`markRead`) |
+| `/tmp/estuairefleet-venv/bin/ruff format --check .` | 5 fichiers à reformater |
+| `/tmp/estuairefleet-venv/bin/python manage.py makemigrations --check --dry-run` | OK, aucune migration manquante |
+| `npm run build:css` | OK avec avertissement Browserslist obsolète |
 
 ## 7. Écarts UML et dettes identifiés
 
