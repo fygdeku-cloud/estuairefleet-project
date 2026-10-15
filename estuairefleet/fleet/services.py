@@ -46,7 +46,10 @@ def deactivate_campus(*, campus):
 
 @transaction.atomic
 def create_trajet(*, stops=None, **data):
+    campuses = data.pop("campuses", None)
     trajet = Trajet.objects.create(**data)
+    if campuses is not None:
+        trajet.campuses.set(campuses)
     for item in stops or []:
         Stop.objects.create(trajet=trajet, **item)
     return trajet
@@ -54,10 +57,13 @@ def create_trajet(*, stops=None, **data):
 
 @transaction.atomic
 def update_trajet(*, trajet, stops=None, **data):
+    campuses = data.pop("campuses", None)
     for key, value in data.items():
         setattr(trajet, key, value)
     trajet.full_clean()
     trajet.save()
+    if campuses is not None:
+        trajet.campuses.set(campuses)
     if stops is not None:
         trajet.stops.all().delete()
         Stop.objects.bulk_create([Stop(trajet=trajet, **item) for item in stops])
@@ -148,7 +154,29 @@ def set_bus_occupancy(*, bus, places, by):
     if locked.status != previous_status:
         locked.status_changed_at = timezone.now()
     locked.save(update_fields=["places_occupees", "status", "status_changed_at", "updated_at"])
+    if locked.status == BusStatus.PLEIN and previous_status != BusStatus.PLEIN:
+        reassign_signals_for_full_bus(bus=locked)
     return locked
+
+
+@transaction.atomic
+def reassign_signals_for_full_bus(*, bus):
+    """Informe les étudiants actifs et relance l'évaluation du trajet vers un bus disponible."""
+    if bus.trajet_id is None:
+        return 0
+    from estuairefleet.notifications.services import create_in_app_notification
+    from estuairefleet.signals.selectors import get_active_signals_for_trajet
+
+    signals = get_active_signals_for_trajet(bus.trajet).select_related("student__user")
+    for signal in signals:
+        create_in_app_notification(
+            recipient=signal.student.user,
+            title="Changement de bus",
+            message="Votre demande est orientée vers un autre bus disponible sur ce trajet.",
+            metadata={"trajet_id": str(bus.trajet_id), "bus_id": str(bus.pk)},
+            notification_type="bus_change",
+        )
+    return len(signals)
 
 
 @transaction.atomic

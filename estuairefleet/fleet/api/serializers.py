@@ -39,6 +39,7 @@ class BusSerializer(serializers.ModelSerializer):
             "label",
             "capacity",
             "status",
+            "chauffeur",
             "position_lat",
             "position_lng",
             "position_updated_at",

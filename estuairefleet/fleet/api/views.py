@@ -5,10 +5,16 @@ from estuairefleet.fleet.models import Bus, Campus, Incident, Trajet
 from estuairefleet.fleet.permissions import CanManageFleet
 from estuairefleet.fleet.services import (
     change_bus_status,
+    create_bus,
+    create_campus,
+    create_trajet,
     report_incident,
     resolve_incident,
     set_bus_occupancy,
+    update_bus,
     update_bus_position,
+    update_campus,
+    update_trajet,
 )
 from estuairefleet.users.permissions import IsDriver, IsTransportAdmin
 
@@ -22,6 +28,12 @@ class CampusViewSet(viewsets.ModelViewSet):
     def get_permissions(self):
         return [CanManageFleet()] if self.request.method not in ("GET", "HEAD", "OPTIONS") else [IsAuthenticated()]
 
+    def perform_create(self, serializer):
+        serializer.instance = create_campus(**serializer.validated_data)
+
+    def perform_update(self, serializer):
+        serializer.instance = update_campus(campus=self.get_object(), **serializer.validated_data)
+
 
 class TrajetViewSet(viewsets.ModelViewSet):
     queryset = Trajet.objects.filter(is_active=True).prefetch_related("campuses", "stops")
@@ -30,8 +42,14 @@ class TrajetViewSet(viewsets.ModelViewSet):
     def get_permissions(self):
         return [CanManageFleet()] if self.request.method not in ("GET", "HEAD", "OPTIONS") else [IsAuthenticated()]
 
+    def perform_create(self, serializer):
+        serializer.instance = create_trajet(**serializer.validated_data)
 
-class BusViewSet(viewsets.ReadOnlyModelViewSet):
+    def perform_update(self, serializer):
+        serializer.instance = update_trajet(trajet=self.get_object(), **serializer.validated_data)
+
+
+class BusViewSet(viewsets.ModelViewSet):
     queryset = Bus.objects.select_related("trajet", "chauffeur__user")
     serializer_class = BusSerializer
 
@@ -41,6 +59,15 @@ class BusViewSet(viewsets.ReadOnlyModelViewSet):
         if self.action in {"my_position", "my_status", "my_occupancy"}:
             return [IsDriver()]
         return [CanManageFleet()]
+
+    def perform_create(self, serializer):
+        serializer.instance = create_bus(**serializer.validated_data)
+
+    def perform_update(self, serializer):
+        serializer.instance = update_bus(bus=self.get_object(), **serializer.validated_data)
+
+    def get_serializer_context(self):
+        return {**super().get_serializer_context(), "request": self.request}
 
     @decorators.action(detail=False, methods=["get"], permission_classes=[IsAuthenticated])
     def positions(self, request):
@@ -75,6 +102,11 @@ class IncidentViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         serializer.instance = report_incident(by=self.request.user, **serializer.validated_data)
+
+    def perform_update(self, serializer):
+        serializer.instance = report_incident(
+            incident=self.get_object(), by=self.request.user, **serializer.validated_data
+        )
 
     @decorators.action(detail=True, methods=["post"])
     def resolve(self, request, pk=None):

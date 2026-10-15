@@ -76,6 +76,6 @@ def get_nearest_available_bus(*, latitude, longitude):
     ).select_related("trajet", "chauffeur__user")
     return min(
         candidates,
-        key=lambda bus: haversine_m((latitude, longitude), (bus.position_lat, bus.position_lng)),
+        key=lambda bus: haversine_m((float(latitude), float(longitude)), (bus.position_lat, bus.position_lng)),
         default=None,
     )
