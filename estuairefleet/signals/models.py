@@ -18,10 +18,10 @@ class SignalStatus(models.TextChoices):
 
 class Signal(BaseModel):
     student = models.ForeignKey(
-        "users.Student", on_delete=models.CASCADE, related_name="signals", verbose_name=_("étudiant"), null=True
+        "users.Student", on_delete=models.CASCADE, related_name="signals", verbose_name=_("étudiant")
     )
     trajet = models.ForeignKey(
-        "fleet.Trajet", on_delete=models.CASCADE, related_name="signals", verbose_name=_("trajet"), null=True
+        "fleet.Trajet", on_delete=models.CASCADE, related_name="signals", verbose_name=_("trajet")
     )
     position_lat = models.DecimalField(_("latitude"), max_digits=9, decimal_places=6, null=True, blank=True)
     position_lng = models.DecimalField(_("longitude"), max_digits=9, decimal_places=6, null=True, blank=True)
