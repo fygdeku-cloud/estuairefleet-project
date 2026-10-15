@@ -47,6 +47,7 @@ def evaluate_route_alert(*, route) -> Alert | None:
                 title="Nouvelle alerte sur votre trajet",
                 message=f"{count} signal(s) actif(s) attendent sur {locked_route.name}.",
                 metadata={"alert_id": str(alert.pk), "route_id": str(locked_route.pk)},
+                notification_type="alert",
             )
     else:
         alert.signal_count = count
@@ -61,13 +62,11 @@ def respond_to_alert(*, alert: Alert, driver, response_type, eta_minutes=None, r
     locked = Alert.objects.select_for_update().select_related("route").get(pk=alert.pk)
     is_route_driver = locked.route.buses.filter(chauffeur__user=driver).exists()
     is_relay_driver = bool(
-        locked.relay_bus_id
-        and locked.relay_bus.chauffeur
-        and locked.relay_bus.chauffeur.user_id == driver.pk
+        locked.relay_bus_id and locked.relay_bus.chauffeur and locked.relay_bus.chauffeur.user_id == driver.pk
     )
     if not (is_route_driver or is_relay_driver):
         raise PermissionDenied("Cette alerte ne concerne pas votre bus.")
-    if locked.status not in (AlertStatus.TRIGGERED, AlertStatus.ESCALATED, AlertStatus.RELAY):
+    if locked.status not in (AlertStatus.TRIGGERED, AlertStatus.IN_PROGRESS, AlertStatus.ESCALATED, AlertStatus.RELAY):
         raise ValidationError("Cette alerte n'accepte plus de réponse.")
     response = AlertResponse(
         alert=locked,
@@ -87,6 +86,7 @@ def respond_to_alert(*, alert: Alert, driver, response_type, eta_minutes=None, r
         locked.status = AlertStatus.RESOLVED
         locked.resolved_at = timezone.now()
         locked.save(update_fields=["status", "resolved_at", "updated_at"])
+        _notify_waiting_students(locked, "Votre signal a été pris en charge par le chauffeur.")
     else:
         locked.status = AlertStatus.RELAY
         locked.motif = reason
@@ -100,6 +100,7 @@ def respond_to_alert(*, alert: Alert, driver, response_type, eta_minutes=None, r
                 title="Demande de relais prioritaire",
                 message=f"Un relais est demandé pour le trajet {locked.route.name}.",
                 metadata={"alert_id": str(locked.pk), "relay": True},
+                notification_type="alert",
             )
     return response
 
@@ -116,6 +117,13 @@ def escalate_alert(*, alert: Alert) -> Alert:
             locked.response_deadline = timezone.now() + timedelta(minutes=conf.ALERT_RESPONSE_TIMEOUT_MINUTES)
             locked.save(update_fields=["relay_bus", "response_deadline", "updated_at"])
             AlertRelayAttempt.objects.get_or_create(alert=locked, bus=relay_bus)
+            create_in_app_notification(
+                recipient=relay_bus.chauffeur.user,
+                title="Demande de relais prioritaire",
+                message=f"Un relais est demandé pour le trajet {locked.route.name}.",
+                metadata={"alert_id": str(locked.pk), "relay": True},
+                notification_type="alert",
+            )
             return locked
     locked.status = AlertStatus.ESCALATED
     locked.escalated_at = timezone.now()
@@ -135,10 +143,11 @@ def respond_to_relay(*, alert, driver, accepted, reason=""):
         locked.status = AlertStatus.RESOLVED
         locked.resolved_at = timezone.now()
         locked.save(update_fields=["status", "resolved_at", "updated_at"])
+        _notify_waiting_students(locked, "Un bus relais a accepté votre demande.")
     else:
         locked.response_deadline = timezone.now()
         locked.save(update_fields=["response_deadline", "updated_at"])
-        escalate_alert(alert=locked)
+        return escalate_alert(alert=locked)
     return locked
 
 
@@ -154,3 +163,16 @@ def resolve_alert(*, alert: Alert, by) -> Alert:
 def validate_response_type(value):
     if value not in DriverResponseType.values:
         raise ValidationError("Réponse chauffeur non reconnue.")
+
+
+def _notify_waiting_students(alert, message):
+    from estuairefleet.notifications.services import create_in_app_notification
+
+    for signal in alert.signals.filter(status="actif").select_related("student__user"):
+        create_in_app_notification(
+            recipient=signal.student.user,
+            title="Signal pris en charge",
+            message=message,
+            metadata={"alert_id": str(alert.pk)},
+            notification_type="signal_taken",
+        )

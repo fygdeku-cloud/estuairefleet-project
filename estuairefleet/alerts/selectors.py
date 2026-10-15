@@ -1,6 +1,8 @@
-from django.db.models import QuerySet
+from django.db.models import F, QuerySet
 from django.utils import timezone
 
+from estuairefleet.core.geo import haversine_m
+from estuairefleet.fleet.models import Bus
 from estuairefleet.fleet.selectors import get_nearest_available_bus
 from estuairefleet.signals.models import SignalStatus
 
@@ -50,10 +52,26 @@ def get_threshold_for_route(route, *, at=None):
 
 
 def get_next_relay_bus(alert, *, excluded_ids=()):
-    from estuairefleet.fleet.selectors import get_nearest_available_bus
-
     signal = alert.signals.filter(status=SignalStatus.ACTIF).order_by("created_at").first()
-    if not signal:
+    if not signal or signal.position_lat is None or signal.position_lng is None:
         return None
-    candidate = get_nearest_available_bus(latitude=signal.position_lat, longitude=signal.position_lng)
-    return candidate if candidate and candidate.pk not in set(excluded_ids) else None
+    excluded = set(excluded_ids) | set(alert.route.buses.values_list("pk", flat=True))
+    candidates = (
+        Bus.objects.filter(
+            status__in=("disponible", "en_route"),
+            chauffeur__isnull=False,
+            places_occupees__lt=F("capacity"),
+            position_lat__isnull=False,
+            position_lng__isnull=False,
+        )
+        .exclude(pk__in=excluded)
+        .select_related("chauffeur__user")
+    )
+    return min(
+        candidates,
+        key=lambda bus: haversine_m(
+            (float(signal.position_lat), float(signal.position_lng)),
+            (bus.position_lat, bus.position_lng),
+        ),
+        default=None,
+    )

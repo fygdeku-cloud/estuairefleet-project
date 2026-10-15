@@ -5,7 +5,12 @@ from django.core.exceptions import PermissionDenied
 from django.utils import timezone
 
 from estuairefleet.alerts.models import AlertStatus, DriverResponseType
-from estuairefleet.alerts.services import escalate_alert, evaluate_route_alert, respond_to_alert
+from estuairefleet.alerts.services import (
+    escalate_alert,
+    evaluate_route_alert,
+    respond_to_alert,
+    respond_to_relay,
+)
 from estuairefleet.fleet.models import Bus, BusStatus, Trajet
 from estuairefleet.signals.services import emit_signal
 from estuairefleet.users.models import Chauffeur, Student, User
@@ -40,7 +45,7 @@ def test_alert_notifies_assigned_driver_and_accepts_response():
         eta_minutes=8,
     )
     assert response.driver_id == driver.pk
-    assert alert.__class__.objects.get(pk=alert.pk).status == AlertStatus.IN_PROGRESS
+    assert alert.__class__.objects.get(pk=alert.pk).status == AlertStatus.RESOLVED
     assert bus.pk is not None
 
 
@@ -76,3 +81,49 @@ def test_expired_response_deadline_escalates():
 
     assert escalated.status == AlertStatus.ESCALATED
     assert escalated.escalated_at is not None
+
+
+@pytest.mark.django_db
+def test_relay_is_accepted_or_passes_to_the_next_bus():
+    route = Trajet.objects.create(name="Route relais", itinerary=[[3.8667, 11.5167]], seuil_alerte=1)
+    route_user = User.objects.create_user(email="route-driver@example.test", password="password", role="driver")
+    route_driver = Chauffeur.objects.create(user=route_user, licence_number="LIC-ROUTE")
+    Bus.objects.create(
+        plate_number="CE-ROUTE",
+        capacity=20,
+        status=BusStatus.EN_ROUTE,
+        chauffeur=route_driver,
+        trajet=route,
+        position_lat=3.8667,
+        position_lng=11.5167,
+    )
+    relay_users = []
+    relay_buses = []
+    for index, longitude in enumerate((11.5170, 11.5175), start=1):
+        user = User.objects.create_user(email=f"relay-{index}@example.test", password="password", role="driver")
+        chauffeur = Chauffeur.objects.create(user=user, licence_number=f"LIC-RELAY-{index}")
+        relay_buses.append(
+            Bus.objects.create(
+                plate_number=f"CE-RELAY-{index}",
+                capacity=20,
+                status=BusStatus.DISPONIBLE,
+                chauffeur=chauffeur,
+                position_lat=3.8667,
+                position_lng=longitude,
+            )
+        )
+        relay_users.append(user)
+    make_student(20, route)
+    alert = evaluate_route_alert(route=route)
+
+    respond_to_alert(
+        alert=alert,
+        driver=route_user,
+        response_type=DriverResponseType.UNAVAILABLE,
+        reason="Panne",
+        relay_bus=relay_buses[0],
+    )
+    assert respond_to_relay(alert=alert, driver=relay_users[0], accepted=False).relay_bus_id == relay_buses[1].pk
+    resolved = respond_to_relay(alert=alert, driver=relay_users[1], accepted=True)
+
+    assert resolved.status == AlertStatus.RESOLVED

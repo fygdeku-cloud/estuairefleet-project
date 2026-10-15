@@ -58,7 +58,7 @@ class Alert(BaseModel):
                         AlertStatus.PENDING,
                         AlertStatus.TRIGGERED,
                         AlertStatus.IN_PROGRESS,
-                    AlertStatus.RELAY,
+                        AlertStatus.RELAY,
                         AlertStatus.ESCALATED,
                     ]
                 ),

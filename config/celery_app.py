@@ -18,9 +18,21 @@ app.conf.beat_schedule = {
         "task": "estuairefleet.alerts.tasks.escalate_timed_out_alerts",
         "schedule": 60.0,
     },
+    "evaluate-active-routes": {
+        "task": "estuairefleet.alerts.tasks.evaluate_active_routes",
+        "schedule": 60.0,
+    },
+    "purge-old-signal-positions": {
+        "task": "estuairefleet.signals.tasks.purge_old_signal_positions",
+        "schedule": 3600.0,
+    },
     "notify-upcoming-intercampus-courses": {
         "task": "estuairefleet.intercampus.tasks.notify_upcoming_courses",
         "schedule": 60.0,
+    },
+    "dispatch-pending-notifications": {
+        "task": "estuairefleet.notifications.tasks.dispatch_pending_notifications",
+        "schedule": 30.0,
     },
 }
 
