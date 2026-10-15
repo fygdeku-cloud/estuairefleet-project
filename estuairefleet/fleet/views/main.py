@@ -16,7 +16,7 @@ class FleetOverviewView(AdminRequiredMixin, TemplateView):
 
 
 class MyBusView(DriverRequiredMixin, TemplateView):
-    template_name = "fleet/my_bus.html"
+    template_name = "fleet/my_bus_live.html"
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -25,7 +25,7 @@ class MyBusView(DriverRequiredMixin, TemplateView):
 
 
 class NetworkView(LoginRequiredMixin, TemplateView):
-    template_name = "fleet/network.html"
+    template_name = "fleet/network_live.html"
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
