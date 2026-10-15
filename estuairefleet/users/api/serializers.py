@@ -15,3 +15,9 @@ class AccountAdminSerializer(serializers.ModelSerializer):
         model = User
         fields = ("id", "email", "matricule", "first_name", "last_name", "phone_number", "role", "is_active")
         read_only_fields = ("id",)
+
+
+class UserProfileSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ("first_name", "last_name", "phone_number")

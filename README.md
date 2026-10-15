@@ -22,15 +22,15 @@ Comptes de démonstration : `admin@insam.local`, `scolarite@insam.local`, `chauf
 
 ## Commandes
 
-`just test`, `just lint`, `just fmt`, `just migrate`, `just makemigrations`, `just seed`, `just shell`, `just logs`, `just screenshots`.
+`just test`, `just lint`, `just fmt`, `just css`, `just verify`, `just migrate`, `just makemigrations`, `just seed`, `just shell`, `just logs`, `just screenshots`.
 
 Les simulations sont `python manage.py simulate_signals --trajet R1-AL --count 5` et `python manage.py simulate_bus_movement --bus CE-2026-EF`.
 
 ## Architecture
 
-Les domaines `users`, `fleet` et `signals` séparent modèles, validateurs, services d’écriture et selectors de lecture. Les profils de rôle sont composés par OneToOne. Les positions étudiant sont filtrées au selector central de Signals avant tout rendu ou payload JSON.
+Les domaines `users`, `fleet`, `signals`, `alerts`, `intercampus` et `notifications` séparent modèles, validateurs, services d’écriture et selectors de lecture. Les profils de rôle sont composés par OneToOne. Les positions étudiant sont filtrées au selector central de Signals avant tout rendu ou payload JSON.
 
-Les apps `alerts`, `intercampus` et `notifications` sont conservées comme points d’extension de la feuille de route ; aucun écran de ces modules n’est exposé par le MVP courant.
+Les alertes, cours inter-campus et notifications disposent de parcours HTML, de tâches Celery et d’endpoints REST. La position des bus est rafraîchie par polling JSON et les points de signal sont visibles uniquement aux rôles autorisés.
 
 ## Qualité et déploiement
 

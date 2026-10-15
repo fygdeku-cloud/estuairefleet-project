@@ -1,7 +1,10 @@
 from django.conf import settings
 from django.core.management.base import BaseCommand, CommandError
+from django.utils import timezone
 
 from estuairefleet.fleet.models import Bus, BusStatus, Campus, Direction, Stop, Trajet
+from estuairefleet.signals.models import SignalStatus
+from estuairefleet.signals.services import emit_signal
 from estuairefleet.users.models import Administrateur, Chauffeur, Personnel, Student, User, UserRole
 
 DEMO_PASSWORD = "EstuaireDemo2026!"
@@ -70,6 +73,13 @@ class Command(BaseCommand):
                 user=student, defaults={"matricule": student.matricule, "campus": campuses[index % 2]}
             )
             profile.trajets_habituels.add(routes[index % len(routes)])
+            if index < 5:
+                profile.consent_location = True
+                profile.location_consent_at = timezone.now()
+                profile.save(update_fields=["consent_location", "location_consent_at", "updated_at"])
+                if not profile.signals.filter(status=SignalStatus.ACTIF).exists():
+                    point = routes[index % len(routes)].itinerary[0]
+                    emit_signal(student=profile, trajet=routes[index % len(routes)], lat=point[0], lng=point[1])
         statuses = [BusStatus.EN_ROUTE, BusStatus.DISPONIBLE, BusStatus.INDISPONIBLE]
         for index, driver in enumerate(drivers):
             Bus.objects.update_or_create(

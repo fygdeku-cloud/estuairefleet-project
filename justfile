@@ -31,6 +31,17 @@ makemigrations:
 seed:
     uv run python manage.py seed_demo
 
+css:
+    npm run build:css
+
+verify:
+    uv run ruff check .
+    uv run ruff format --check .
+    uv run python manage.py makemigrations --check --dry-run
+    uv run python manage.py check
+    uv run pytest
+    npm run build:css
+
 shell:
     uv run python manage.py shell
 
