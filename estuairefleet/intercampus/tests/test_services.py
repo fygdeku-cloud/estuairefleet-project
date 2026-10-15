@@ -6,7 +6,13 @@ from django.utils import timezone
 
 from estuairefleet.fleet.models import Bus, BusStatus, Campus
 from estuairefleet.intercampus.models import IntercampusCourseStatus
-from estuairefleet.intercampus.services import assign_bus, create_course, mark_driver_notified, transition_course
+from estuairefleet.intercampus.services import (
+    assign_bus,
+    auto_assign_bus,
+    create_course,
+    mark_driver_notified,
+    transition_course,
+)
 from estuairefleet.users.models import Chauffeur, User
 
 
@@ -67,3 +73,23 @@ def test_bus_cannot_be_double_booked_on_overlapping_courses():
 
     with pytest.raises(ValidationError):
         assign_bus(course=second, bus=bus)
+
+
+@pytest.mark.django_db
+def test_course_can_assign_the_first_compatible_available_bus():
+    depart, arrivee = campuses()
+    driver = User.objects.create_user(email="auto-driver@example.test", password="password", role="driver")
+    chauffeur = Chauffeur.objects.create(user=driver, licence_number="LIC-AUTO")
+    bus = Bus.objects.create(plate_number="CE-AUTO", capacity=40, status=BusStatus.DISPONIBLE, chauffeur=chauffeur)
+    course = create_course(
+        group="G auto",
+        campus_depart=depart,
+        campus_arrivee=arrivee,
+        start_at=timezone.now() + timedelta(hours=2),
+        horaire_fin=timezone.now() + timedelta(hours=3),
+        effectif=20,
+    )
+
+    assigned = auto_assign_bus(course=course)
+
+    assert assigned.bus_affecte_id == bus.pk

@@ -17,3 +17,7 @@ class NotificationViewSet(viewsets.ReadOnlyModelViewSet):
     def read(self, request, pk=None):
         notification = mark_notification_read(notification=self.get_object(), user=request.user)
         return response.Response(NotificationSerializer(notification).data)
+
+    @decorators.action(detail=False, methods=["get"])
+    def unread_count(self, request):
+        return response.Response({"count": self.get_queryset().filter(read_at__isnull=True).count()})

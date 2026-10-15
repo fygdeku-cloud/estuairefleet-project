@@ -1,9 +1,9 @@
-from rest_framework import viewsets
+from rest_framework import decorators, response, viewsets
 from rest_framework.permissions import IsAuthenticated
 
 from estuairefleet.intercampus.models import CoursInterCampus
 from estuairefleet.intercampus.selectors import get_upcoming_courses
-from estuairefleet.intercampus.services import create_course, delete_course, update_course
+from estuairefleet.intercampus.services import auto_assign_bus, create_course, delete_course, update_course
 from estuairefleet.users.permissions import IsStaffOrAdmin
 
 from .serializers import CoursInterCampusSerializer
@@ -32,3 +32,8 @@ class CoursInterCampusViewSet(viewsets.ModelViewSet):
 
     def perform_destroy(self, instance):
         delete_course(course=instance)
+
+    @decorators.action(detail=True, methods=["post"], permission_classes=[IsStaffOrAdmin], url_path="assign-auto")
+    def assign_auto(self, request, pk=None):
+        course = auto_assign_bus(course=self.get_object())
+        return response.Response(self.get_serializer(course).data)

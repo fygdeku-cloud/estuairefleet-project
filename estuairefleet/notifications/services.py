@@ -7,7 +7,9 @@ from .providers import provider_for
 
 
 @transaction.atomic
-def create_in_app_notification(*, recipient, title, message, metadata=None, notification_type="information") -> Notification:
+def create_in_app_notification(
+    *, recipient, title, message, metadata=None, notification_type="information"
+) -> Notification:
     return Notification.objects.create(
         recipient=recipient,
         title=title,
@@ -21,7 +23,9 @@ def create_in_app_notification(*, recipient, title, message, metadata=None, noti
 
 
 @transaction.atomic
-def create_notification(*, recipient, title, message, channel="in_app", notification_type="information", metadata=None):
+def create_notification(
+    *, recipient, title, message, channel="in_app", notification_type="information", metadata=None
+):
     notification = Notification.objects.create(
         recipient=recipient,
         title=title,
@@ -45,7 +49,9 @@ def dispatch_notification(*, notification):
     if provider is None:
         raise ValueError("Canal de notification non pris en charge.")
     try:
-        reference = provider.send(recipient=notification.recipient, title=notification.title, message=notification.message)
+        reference = provider.send(
+            recipient=notification.recipient, title=notification.title, message=notification.message
+        )
     except Exception:
         notification.status = NotificationStatus.FAILED
         notification.failed_at = timezone.now()

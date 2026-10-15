@@ -18,10 +18,17 @@ def notify_upcoming_courses():
     )
     count = 0
     for course in courses:
-        if course.horaire_fin <= now + timedelta(minutes=course.notify_before_minutes) and not course.driver_notified_at:
+        if (
+            course.horaire_fin <= now + timedelta(minutes=course.notify_before_minutes)
+            and not course.driver_notified_at
+        ):
             notify_upcoming_course(course=course)
             count += 1
-        elif course.driver_notified_at and not course.reminder_sent_at and course.horaire_fin <= now + timedelta(minutes=10):
+        elif (
+            course.driver_notified_at
+            and not course.reminder_sent_at
+            and course.horaire_fin <= now + timedelta(minutes=10)
+        ):
             send_course_reminder(course=course)
             count += 1
     return count

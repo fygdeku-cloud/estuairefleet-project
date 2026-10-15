@@ -2,6 +2,7 @@ from django.core.exceptions import ValidationError
 from django.db import transaction
 from django.utils import timezone
 
+from estuairefleet.fleet.models import Bus, BusStatus
 from estuairefleet.notifications.services import create_in_app_notification
 
 from .models import CourseChangeType, CoursInterCampus, IntercampusCourseStatus
@@ -56,6 +57,22 @@ def assign_bus(*, course: CoursInterCampus, bus) -> CoursInterCampus:
 
 
 @transaction.atomic
+def auto_assign_bus(*, course: CoursInterCampus) -> CoursInterCampus:
+    locked = CoursInterCampus.objects.select_for_update().get(pk=course.pk)
+    candidates = Bus.objects.filter(
+        status__in=(BusStatus.DISPONIBLE, BusStatus.EN_ROUTE),
+        chauffeur__isnull=False,
+        capacity__gte=locked.effectif,
+    ).order_by("places_occupees", "plate_number")
+    for bus in candidates:
+        try:
+            return assign_bus(course=locked, bus=bus)
+        except ValidationError:
+            continue
+    raise ValidationError("Aucun bus disponible ne peut être affecté à ce cours.")
+
+
+@transaction.atomic
 def transition_course(*, course: CoursInterCampus, target: str) -> CoursInterCampus:
     locked = CoursInterCampus.objects.select_for_update().get(pk=course.pk)
     validate_course_status_transition(current=locked.status, target=target)
@@ -92,7 +109,9 @@ def notify_upcoming_course(*, course: CoursInterCampus) -> CoursInterCampus:
 
 @transaction.atomic
 def send_course_reminder(*, course: CoursInterCampus) -> CoursInterCampus:
-    locked = CoursInterCampus.objects.select_for_update().select_related("bus_affecte__chauffeur__user").get(pk=course.pk)
+    locked = (
+        CoursInterCampus.objects.select_for_update().select_related("bus_affecte__chauffeur__user").get(pk=course.pk)
+    )
     if locked.reminder_sent_at or not locked.bus_affecte or not locked.bus_affecte.chauffeur:
         return locked
     locked.reminder_sent_at = timezone.now()

@@ -64,7 +64,7 @@ class Notification(BaseModel):
         self.read_at = timezone.now()
         self.save(update_fields=["read_at", "updated_at"])
 
-    def markRead(self):
+    def markRead(self):  # noqa: N802
         return self.mark_read()
 
     @property
