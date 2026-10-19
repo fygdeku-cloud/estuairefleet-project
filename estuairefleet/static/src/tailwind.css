@@ -122,6 +122,11 @@
   .ef-bottom-nav {
     padding-bottom: max(.375rem, env(safe-area-inset-bottom));
   }
+
+  .ef-table-scroll {
+    @apply -mx-1 overflow-x-auto px-1;
+    scrollbar-width: thin;
+  }
 }
 
 @keyframes ef-float {
@@ -139,6 +144,8 @@
 .ef-pulse-ring { animation: ef-pulse-ring 2.2s infinite; }
 
 .leaflet-container { z-index: 0; }
+.leaflet-control-zoom a { color: #1f2937 !important; }
+.leaflet-control-attribution { font-size: 9px; }
 
 .ef-signal-marker { background: transparent; border: 0; }
 .ef-signal-marker-dot {
@@ -155,4 +162,14 @@
 @keyframes ef-map-pulse {
   0%, 100% { transform: scale(1); }
   50% { transform: scale(1.16); }
+}
+
+@media (max-width: 639px) {
+  .leaflet-control-zoom a { width: 34px !important; height: 34px !important; line-height: 34px !important; }
+  .leaflet-control-zoom { margin-right: 10px !important; margin-bottom: 10px !important; }
+  .leaflet-control-attribution { max-width: 70%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ef-pulse-ring, .ef-signal-marker-dot { animation: none; }
 }
