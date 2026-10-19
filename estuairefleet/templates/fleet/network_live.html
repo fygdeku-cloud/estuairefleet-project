@@ -1,5 +1,8 @@
 {% extends "base.html" %}
+{% load static %}
 {% block title %}Trajets et bus — EstuaireFleet{% endblock %}
+{% block extra_head %}<link rel="stylesheet" href="{% static 'vendor/leaflet/leaflet.css' %}">{% endblock %}
+{% block map_scripts %}<script defer src="{% static 'vendor/leaflet/leaflet.js' %}"></script><script defer src="{% static 'js/bus_tracking.js' %}"></script>{% endblock %}
 {% block content %}
 <div class="ef-page-intro"><div><p class="ef-eyebrow">Réseau en mouvement</p><h1 class="ef-title">Trajets et bus</h1><p class="ef-lead">Les positions des bus sont rafraîchies automatiquement.</p></div><span class="inline-flex items-center gap-2 rounded-full bg-emerald-50 px-3 py-2 text-xs font-bold text-emerald-700"><span class="ef-status-dot"></span>Actualisation active</span></div>
 <div class="mb-4 hidden rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-800" data-bus-degraded role="status">Connexion instable : actualisation des bus en attente.</div>

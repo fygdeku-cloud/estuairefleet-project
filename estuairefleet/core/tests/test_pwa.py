@@ -10,7 +10,7 @@ def test_service_worker_is_served_at_root(client):
 
     assert response.status_code == 200
     assert response["Content-Type"].startswith("application/javascript")
-    assert b"estuairefleet-shell-v1" in b"".join(response.streaming_content)
+    assert b"estuairefleet-shell-v2" in b"".join(response.streaming_content)
 
 
 def test_pwa_assets_are_present():

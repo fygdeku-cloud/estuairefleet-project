@@ -1,4 +1,4 @@
-const CACHE_NAME = "estuairefleet-shell-v1";
+const CACHE_NAME = "estuairefleet-shell-v2";
 const APP_SHELL = [
   "/about/",
   "/static/pwa/manifest.json",

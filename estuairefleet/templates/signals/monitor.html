@@ -1,5 +1,8 @@
 {% extends "base.html" %}
+{% load static %}
 {% block title %}Supervision — EstuaireFleet{% endblock %}
+{% block extra_head %}<link rel="stylesheet" href="{% static 'vendor/leaflet/leaflet.css' %}">{% endblock %}
+{% block map_scripts %}<script defer src="{% static 'vendor/leaflet/leaflet.js' %}"></script><script defer src="{% static 'js/signal_map.js' %}"></script>{% endblock %}
 {% block content %}
 <div class="ef-page-intro"><div><p class="ef-eyebrow">Centre de supervision</p><h1 class="ef-title">Signaux actifs</h1><p class="ef-lead">Les positions restent visibles uniquement aux personnes habilitées.</p></div><span class="inline-flex items-center gap-2 rounded-full bg-emerald-50 px-3 py-2 text-xs font-bold text-emerald-700"><span class="ef-status-dot"></span>Service opérationnel</span></div>
 <div class="mb-4 hidden rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-800" data-signal-degraded role="status">Connexion instable : nouvelle tentative automatique en cours.</div>
