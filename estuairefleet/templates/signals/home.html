@@ -1,22 +1,22 @@
 {% extends "base.html" %}
 {% block title %}Mon signal — EstuaireFleet{% endblock %}
 {% block content %}
-  <section class="relative overflow-hidden rounded-[2rem] bg-slate-950 px-6 py-8 text-white shadow-lift sm:px-10 sm:py-12 lg:px-14">
+  <section class="relative overflow-hidden rounded-[2rem] bg-slate-950 px-5 py-7 text-white shadow-lift sm:px-10 sm:py-12 lg:px-14">
     <div class="absolute -right-24 -top-32 h-80 w-80 rounded-full bg-insam-600/30 blur-3xl"></div>
     <div class="absolute inset-0 bg-hero-grid bg-[size:32px_32px] opacity-30"></div>
     <div class="relative grid items-center gap-10 lg:grid-cols-[1.15fr_.85fr]">
       <div>
         <div class="mb-6 inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1.5 text-xs font-bold uppercase tracking-[.16em] text-insam-200"><span class="h-2 w-2 rounded-full bg-emerald-400 shadow-[0_0_0_5px_rgba(52,211,153,.12)]"></span> Service transport actif</div>
         <p class="mb-3 text-sm font-bold uppercase tracking-[.18em] text-insam-300">Votre trajet du jour</p>
-        <h1 class="max-w-xl text-4xl font-bold leading-[.98] tracking-tight sm:text-6xl">Le bus arrive quand vous êtes prêt.</h1>
+        <h1 class="max-w-xl text-4xl font-bold leading-[.98] tracking-[-.05em] sm:text-6xl">Le bus arrive quand vous êtes prêt.</h1>
         <p class="mt-5 max-w-lg text-base leading-7 text-slate-300 sm:text-lg">Un seul geste suffit pour signaler votre présence au chauffeur concerné. Votre position reste privée et n’est partagée qu’avec les personnes autorisées.</p>
         <div class="mt-8 flex flex-wrap gap-3"><a class="inline-flex items-center gap-2 rounded-xl border border-white/15 bg-white/10 px-4 py-3 text-sm font-bold text-white transition hover:bg-white/15" href="{% url 'signals:history' %}">Voir mon historique <span aria-hidden="true">→</span></a><span class="inline-flex items-center gap-2 px-2 py-3 text-sm text-slate-400"><svg class="h-4 w-4 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m5 12 4 4L19 6" /></svg> Localisation protégée</span></div>
       </div>
       <div class="flex flex-col items-center justify-center">
-        <button id="signal-emit" type="button" aria-label="Je suis là, j'ai besoin du bus" class="ef-pulse-ring group relative grid h-56 w-56 place-items-center rounded-full border-[14px] border-insam-300/20 bg-insam-600 text-center text-white shadow-[0_20px_70px_rgba(200,16,46,.45)] transition duration-300 hover:scale-105 hover:bg-insam-500 focus:outline-none focus:ring-4 focus:ring-white/60" data-signal-action>
+        <button id="signal-emit" type="button" aria-label="Je suis là, j'ai besoin du bus" class="ef-pulse-ring group relative grid h-52 w-52 place-items-center rounded-full border-[14px] border-insam-300/20 bg-insam-600 text-center text-white shadow-[0_20px_70px_rgba(200,16,46,.45)] transition duration-300 hover:scale-105 hover:bg-insam-500 focus:outline-none focus:ring-4 focus:ring-white/60 sm:h-60 sm:w-60" data-signal-action>
           <span class="absolute inset-5 rounded-full border border-white/20"></span><span class="relative"><svg class="mx-auto mb-3 h-9 w-9 transition group-hover:-translate-y-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18Zm0-5a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z" /></svg><span class="block text-lg font-bold">Je suis là</span><span class="mt-1 block text-xs font-medium text-insam-100">Appuyer pour signaler</span></span>
         </button>
-        <p id="signal-status" class="mt-6 max-w-xs text-center text-sm leading-6 text-slate-300" aria-live="polite">Votre position n’est transmise qu’après votre action.</p>
+        <p id="signal-status" class="mt-6 max-w-xs text-center text-sm leading-6 text-slate-300" aria-live="polite">Votre position n’est transmise qu’après votre action.</p><span class="mt-2 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-[11px] font-semibold text-slate-400"><span class="ef-status-dot ef-status-dot-red"></span> Un seul signal actif par étudiant</span>
       </div>
     </div>
   </section>
