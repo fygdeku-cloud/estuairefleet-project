@@ -12,7 +12,6 @@ const APP_SHELL = [
   "/static/css/domains/notifications.css",
   "/static/js/project.js",
   "/static/js/signal_map.js",
-  "/static/js/signals.js",
   "/static/js/bus_tracking.js",
   "/static/images/favicons/favicon.ico",
   "/static/vendor/leaflet/leaflet.css",

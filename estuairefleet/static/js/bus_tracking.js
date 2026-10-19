@@ -8,6 +8,7 @@ document.addEventListener("DOMContentLoaded", () => {
   let pollTimer;
   let controller;
   let stopped = false;
+  const pollDelay = navigator.connection?.saveData ? 10000 : 5000;
 
   if (mapElement && window.L) {
     const map = L.map(mapElement).setView([3.8667, 11.5167], 12);
@@ -41,7 +42,7 @@ document.addEventListener("DOMContentLoaded", () => {
           }
         }
         if (degraded) degraded.hidden = true;
-        schedulePoll(5000);
+        schedulePoll(pollDelay);
       } catch (error) {
         if (error.name === "AbortError") return;
         if (degraded) degraded.hidden = false;

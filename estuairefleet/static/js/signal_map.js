@@ -8,8 +8,8 @@ document.addEventListener("DOMContentLoaded", () => {
     maxZoom: 19,
   }).addTo(map);
   const markers = new Map();
-  let since = null;
   let retryDelay = 1000;
+  const pollDelay = navigator.connection?.saveData ? 10000 : 5000;
   const degraded = document.querySelector("[data-signal-degraded]");
   const status = document.querySelector("[data-signal-count]");
   let pollTimer;
@@ -54,11 +54,10 @@ document.addEventListener("DOMContentLoaded", () => {
         map.fitBounds([...markers.values()].map((marker) => marker.getLatLng()), { padding: [30, 30] });
         hasFittedBounds = true;
       }
-      since = payload.server_time;
       retryDelay = 1000;
       if (degraded) degraded.hidden = true;
       if (status) status.textContent = `${markers.size} signal${markers.size === 1 ? "" : "aux"} actif${markers.size === 1 ? "" : "s"}`;
-      schedulePoll(5000);
+      schedulePoll(pollDelay);
     } catch (error) {
       if (error.name === "AbortError") return;
       if (degraded) degraded.hidden = false;
