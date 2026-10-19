@@ -1,6 +1,6 @@
 const CACHE_NAME = "estuairefleet-shell-v1";
 const APP_SHELL = [
-  "/",
+  "/about/",
   "/static/pwa/manifest.json",
   "/static/pwa/offline.html",
   "/static/pwa/icons/icon-192.svg",
