@@ -6,8 +6,11 @@ from django.views.generic import RedirectView, TemplateView
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
 from rest_framework.authtoken.views import obtain_auth_token
 
+from estuairefleet.core.views import ServiceWorkerView
+
 urlpatterns = [
     path("", include("estuairefleet.core.urls", namespace="core")),
+    path("sw.js", ServiceWorkerView.as_view(), name="service-worker"),
     path("about/", TemplateView.as_view(template_name="pages/about.html"), name="about"),
     path(settings.ADMIN_URL, admin.site.urls),
     path("users/", include("estuairefleet.users.urls", namespace="users")),

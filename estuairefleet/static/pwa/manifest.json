@@ -1,0 +1,27 @@
+{
+  "name": "EstuaireFleet — Transport étudiant INSAM",
+  "short_name": "EstuaireFleet",
+  "description": "Signaler sa présence et suivre le transport étudiant de l'INSAM.",
+  "lang": "fr-FR",
+  "id": "/",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "theme_color": "#C8102E",
+  "background_color": "#F8F8F8",
+  "icons": [
+    {
+      "src": "/static/pwa/icons/icon-192.svg",
+      "sizes": "192x192",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/static/pwa/icons/icon-512.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

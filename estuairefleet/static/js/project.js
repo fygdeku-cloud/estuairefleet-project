@@ -1,4 +1,60 @@
+let deferredInstallPrompt;
+
+const setOfflineState = () => {
+  const status = document.querySelector("[data-offline-status]");
+  if (status) status.classList.toggle("hidden", navigator.onLine);
+};
+
+window.addEventListener("beforeinstallprompt", (event) => {
+  event.preventDefault();
+  deferredInstallPrompt = event;
+  const panel = document.querySelector("[data-pwa-install]");
+  if (panel) panel.hidden = false;
+});
+
+window.addEventListener("appinstalled", () => {
+  deferredInstallPrompt = undefined;
+  const panel = document.querySelector("[data-pwa-install]");
+  if (panel) panel.hidden = true;
+});
+
+window.addEventListener("online", setOfflineState);
+window.addEventListener("offline", setOfflineState);
+
+window.addEventListener("load", () => {
+  if ("serviceWorker" in navigator) navigator.serviceWorker.register("/sw.js").catch(() => {});
+});
+
 document.addEventListener("DOMContentLoaded", () => {
+  setOfflineState();
+
+  document.querySelector("[data-pwa-install-action]")?.addEventListener("click", async () => {
+    if (!deferredInstallPrompt) return;
+    deferredInstallPrompt.prompt();
+    await deferredInstallPrompt.userChoice;
+    deferredInstallPrompt = undefined;
+    const panel = document.querySelector("[data-pwa-install]");
+    if (panel) panel.hidden = true;
+  });
+  document.querySelector("[data-pwa-dismiss]")?.addEventListener("click", () => {
+    const panel = document.querySelector("[data-pwa-install]");
+    if (panel) panel.hidden = true;
+  });
+
+  if (!window.initFlowbite) {
+    document.querySelectorAll("[data-collapse-toggle]").forEach((toggle) => {
+      toggle.addEventListener("click", () => {
+        const target = document.getElementById(toggle.dataset.collapseToggle);
+        if (!target) return;
+        target.classList.toggle("hidden");
+        toggle.setAttribute("aria-expanded", String(!target.classList.contains("hidden")));
+      });
+    });
+    document.querySelectorAll("[data-dismiss-target]").forEach((dismiss) => {
+      dismiss.addEventListener("click", () => document.querySelector(dismiss.dataset.dismissTarget)?.remove());
+    });
+  }
+
   document.querySelectorAll("[data-toggle='password']").forEach((toggle) => {
     toggle.addEventListener("click", () => {
       const target = document.getElementById(toggle.dataset.target);
@@ -12,10 +68,9 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   const locateButton = document.querySelector("[data-locate]");
-  if (!locateButton) return;
-
-  const status = document.querySelector("[data-location-status]");
-  locateButton.addEventListener("click", () => {
+  if (locateButton) {
+    const status = document.querySelector("[data-location-status]");
+    locateButton.addEventListener("click", () => {
     if (!navigator.geolocation) {
       if (status) status.textContent = "La géolocalisation n’est pas disponible sur cet appareil.";
       return;
@@ -38,5 +93,6 @@ document.addEventListener("DOMContentLoaded", () => {
       },
       { enableHighAccuracy: true, timeout: 10000, maximumAge: 30000 },
     );
-  });
+    });
+  }
 });

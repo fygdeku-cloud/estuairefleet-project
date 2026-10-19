@@ -1,6 +1,10 @@
-from django.http import Http404, HttpResponse
+from pathlib import Path
+
+from django.conf import settings
+from django.http import FileResponse, Http404, HttpResponse
 from django.shortcuts import redirect
 from django.urls import reverse
+from django.views import View
 from django.views.generic import TemplateView
 
 from estuairefleet.users.permissions import AdminRequiredMixin
@@ -28,6 +32,18 @@ class HomeRedirectView(TemplateView):
         if request.user.is_authenticated:
             return redirect(self.get_redirect_url())
         return super().dispatch(request, *args, **kwargs)
+
+
+class ServiceWorkerView(View):
+    """Expose le service worker à la racine pour couvrir toute l'application."""
+
+    def get(self, request, *args, **kwargs):
+        service_worker = Path(settings.APPS_DIR) / "static" / "pwa" / "service-worker.js"
+        if not service_worker.is_file():
+            raise Http404
+        response = FileResponse(service_worker.open("rb"), content_type="application/javascript")
+        response["Cache-Control"] = "no-cache, no-store, must-revalidate"
+        return response
 
 
 class AdminDashboardView(AdminRequiredMixin, TemplateView):
