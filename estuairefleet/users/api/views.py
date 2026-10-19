@@ -13,14 +13,16 @@ class UserViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = User.objects.all()
 
     def get_queryset(self):
-        if self.request.user.is_superuser or self.request.user.role in {"admin", "administrator"}:
+        role = getattr(self.request.user, "role", None)
+        if self.request.user.is_superuser or role in {"admin", "administrator"}:
             return self.queryset
         return self.queryset.filter(pk=self.request.user.pk)
 
     def get_serializer_class(self):
         if self.action == "profile":
             return UserProfileSerializer
-        return AccountAdminSerializer if self.request.user.role in {"admin", "administrator"} else UserSerializer
+        role = getattr(self.request.user, "role", None)
+        return AccountAdminSerializer if role in {"admin", "administrator"} else UserSerializer
 
     def get_permissions(self):
         if self.action in {"activate", "suspend"}:

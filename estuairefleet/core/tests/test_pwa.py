@@ -21,3 +21,12 @@ def test_pwa_assets_are_present():
     assert (static_root / "offline.html").is_file()
     assert (static_root / "icons" / "icon-192.svg").is_file()
     assert (static_root / "icons" / "icon-512.svg").is_file()
+
+
+@pytest.mark.django_db
+def test_base_template_declares_pwa_manifest(client):
+    response = client.get("/")
+
+    assert response.status_code == 200
+    assert b"/static/pwa/manifest.json" in response.content
+    assert b"apple-mobile-web-app-capable" in response.content

@@ -7,7 +7,14 @@ const APP_SHELL = [
   "/static/pwa/icons/icon-512.svg",
   "/static/css/tailwind.css",
   "/static/css/design-system.css",
+  "/static/css/domains/alerts.css",
+  "/static/css/domains/intercampus.css",
+  "/static/css/domains/notifications.css",
   "/static/js/project.js",
+  "/static/js/signal_map.js",
+  "/static/js/signals.js",
+  "/static/js/bus_tracking.js",
+  "/static/images/favicons/favicon.ico",
   "/static/vendor/leaflet/leaflet.css",
   "/static/vendor/leaflet/leaflet.js"
 ];
