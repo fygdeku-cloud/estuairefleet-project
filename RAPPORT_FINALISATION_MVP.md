@@ -32,7 +32,7 @@ Les écarts principaux étaient l'absence de vraie fondation PWA, un contrôle O
 - Manifest avec nom, nom court, description, langue, portée `/`, affichage `standalone`, orientation mobile, couleurs INSAM et icônes 192/512.
 - Icônes SVG carrées adaptées à l'installation et au masque des lanceurs.
 - Service worker enregistré depuis le template de base et servi à la racine pour couvrir toute l'application.
-- Cache de l'app shell : accueil, CSS, JavaScript local, Leaflet, manifest, icônes et page de repli.
+- Cache de l'app shell : page publique À propos, CSS, JavaScript local, Leaflet, manifest, icônes et page de repli.
 - Stratégie réseau : navigation en priorité réseau, page hors connexion de secours et cache-first pour les assets locaux ; les mutations API restent toujours réseau afin de ne pas rejouer une action métier par erreur.
 - Métadonnées d'installation Android/iOS, bandeau d'installation déclenché par le navigateur, état hors connexion et repli du menu mobile.
 - Le mode hors connexion est volontairement basique : les écrans shell restent accessibles, mais l'émission d'un signal nécessite une reconnexion et les tuiles OpenStreetMap ne sont pas mises en cache.
@@ -65,6 +65,8 @@ Commits de cette finalisation :
 - `e237370 chore: analyse de l’état actuel du projet avant finalisation`
 - `05b9da2 feat(pwa): ajouter manifest service worker et mode hors connexion`
 - `ad60d3c fix: corriger la robustesse API et finaliser le shell PWA`
+- `bc24ad5 docs: rapport de finalisation complète du MVP EstuaireFleet` (première version du rapport)
+- `bd55b01 fix(pwa): ne pas mettre en cache les écrans privés`
 - Commit final de livraison : `docs: rapport de finalisation complète du MVP EstuaireFleet`.
 
 Principaux commits fonctionnels déjà présents dans l'historique : finalisation Users, Fleet, Signals, Alerts, Intercampus/Notifications, Core/API et suivi temps réel des bus.
