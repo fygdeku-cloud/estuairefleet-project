@@ -54,6 +54,7 @@ class Signal(BaseModel):
             ),
         ]
         indexes = [
+            models.Index(fields=("student", "status", "expires_at")),
             models.Index(fields=("trajet", "status", "expires_at")),
             models.Index(fields=("status", "expires_at")),
         ]

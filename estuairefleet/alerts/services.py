@@ -110,6 +110,8 @@ def escalate_alert(*, alert: Alert) -> Alert:
     locked = Alert.objects.select_for_update().get(pk=alert.pk)
     if locked.status == AlertStatus.RESOLVED:
         return locked
+    if locked.response_deadline and locked.response_deadline > timezone.now():
+        return locked
     if locked.status == AlertStatus.RELAY:
         relay_bus = get_next_relay_bus(locked, excluded_ids=locked.relay_attempts.values_list("bus_id", flat=True))
         if relay_bus:

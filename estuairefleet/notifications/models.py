@@ -55,7 +55,10 @@ class Notification(BaseModel):
         verbose_name = _("notification")
         verbose_name_plural = _("notifications")
         ordering = ("-created_at",)
-        indexes = [models.Index(fields=("recipient", "status", "created_at"))]
+        indexes = [
+            models.Index(fields=("recipient", "status", "created_at")),
+            models.Index(fields=("recipient", "read_at", "created_at")),
+        ]
 
     def __str__(self):
         return f"{self.recipient} — {self.title}"

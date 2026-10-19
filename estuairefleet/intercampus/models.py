@@ -70,6 +70,10 @@ class CoursInterCampus(BaseModel):
                 name="intercampus_end_after_start",
             ),
         ]
+        indexes = [
+            models.Index(fields=("status", "start_at")),
+            models.Index(fields=("status", "horaire_fin")),
+        ]
 
     def __str__(self):
         return f"{self.group} — {self.campus_depart} → {self.campus_arrivee}"

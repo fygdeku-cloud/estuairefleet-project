@@ -1,7 +1,16 @@
+from datetime import timedelta
 from pathlib import Path
 
 import pytest
 from django.conf import settings
+from django.core.cache import cache
+from django.utils import timezone
+
+from estuairefleet.fleet.models import Trajet
+from estuairefleet.signals.models import Signal, SignalStatus
+from estuairefleet.users.models import Student, User
+
+from ..selectors import get_operational_statistics
 
 
 @pytest.mark.django_db
@@ -30,3 +39,27 @@ def test_base_template_declares_pwa_manifest(client):
     assert response.status_code == 200
     assert b"/static/pwa/manifest.json" in response.content
     assert b"apple-mobile-web-app-capable" in response.content
+
+
+@pytest.mark.django_db
+def test_operational_statistics_uses_database_aggregation_and_short_cache():
+    cache.clear()
+    user = User.objects.create_user(email="stats@example.test", password="password", role="student")
+    student = Student.objects.create(user=user, consent_location=True)
+    route = Trajet.objects.create(name="Route statistiques", itinerary=[[3.8667, 11.5167], [3.87, 11.52]])
+    signal = Signal.objects.create(
+        student=student,
+        trajet=route,
+        position_lat=3.8667,
+        position_lng=11.5167,
+        status=SignalStatus.PRIS_EN_CHARGE,
+        expires_at=timezone.now() + timedelta(minutes=10),
+        taken_at=timezone.now(),
+    )
+    signal.created_at = signal.taken_at - timedelta(minutes=8)
+    signal.save(update_fields=["created_at"])
+
+    statistics = get_operational_statistics()
+
+    assert statistics["taken_rate"] == 100.0
+    assert statistics["average_wait_minutes"] == 8.0

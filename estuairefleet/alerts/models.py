@@ -65,7 +65,10 @@ class Alert(BaseModel):
                 name="one_open_alert_per_route",
             ),
         ]
-        indexes = [models.Index(fields=("route", "status", "created_at"))]
+        indexes = [
+            models.Index(fields=("route", "status", "created_at")),
+            models.Index(fields=("status", "response_deadline")),
+        ]
 
     def __str__(self):
         return f"{self.route} — {self.get_status_display()}"
@@ -127,6 +130,7 @@ class AlertThresholdSchedule(BaseModel):
         verbose_name_plural = _("seuils d'alerte par tranche")
         ordering = ("route", "start_time")
         constraints = [models.CheckConstraint(condition=models.Q(threshold__gt=0), name="schedule_threshold_positive")]
+        indexes = [models.Index(fields=("route", "is_active", "start_time"))]
 
     def clean(self):
         if self.threshold < 1:
