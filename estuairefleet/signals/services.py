@@ -13,6 +13,7 @@ from estuairefleet.core.exceptions import (
     RateLimitExceeded,
     RenewalLimitReached,
 )
+from estuairefleet.notifications.services import create_in_app_notification
 from estuairefleet.users.services import register_abuse_warning
 
 from .events import signal_emitted, signal_state_changed
@@ -87,6 +88,13 @@ def emit_signal(*, student, lat=None, lng=None, accuracy=None, trajet=None, rout
     from estuairefleet.alerts.services import evaluate_route_alert
 
     evaluate_route_alert(route=trajet)
+    create_in_app_notification(
+        recipient=locked_student.user,
+        title="Signal envoyé",
+        message=f"Votre signal est actif sur le trajet {trajet.name}.",
+        metadata={"signal_id": str(signal.pk), "route_id": str(trajet.pk)},
+        event_key=f"signal:{signal.pk}:emitted",
+    )
     return signal
 
 
@@ -134,6 +142,14 @@ def close_signal(*, signal, by, bus=None):
         locked.status = SignalStatus.PRIS_EN_CHARGE
         locked.taken_at, locked.taken_by_bus, locked.closed_by = timezone.now(), bus, by
         locked.save(update_fields=["status", "taken_at", "taken_by_bus", "closed_by", "updated_at"])
+        create_in_app_notification(
+            recipient=locked.student.user,
+            title="Signal pris en charge",
+            message="Le chauffeur a confirmé la prise en charge de votre signal.",
+            metadata={"signal_id": str(locked.pk)},
+            notification_type="signal_taken",
+            event_key=f"signal:{locked.pk}:taken",
+        )
         _notify(signal_state_changed, locked)
     return locked
 
@@ -152,6 +168,14 @@ def expire_signal(signal):
     if locked.status == SignalStatus.ACTIF and locked.expires_at <= timezone.now():
         locked.status = SignalStatus.EXPIRE
         locked.save(update_fields=["status", "updated_at"])
+        locked = Signal.objects.select_related("student__user").get(pk=locked.pk)
+        create_in_app_notification(
+            recipient=locked.student.user,
+            title="Signal expiré",
+            message="Votre signal a expiré. Vous pouvez en émettre un nouveau si nécessaire.",
+            metadata={"signal_id": str(locked.pk)},
+            event_key=f"signal:{locked.pk}:expired",
+        )
         _notify(signal_state_changed, locked)
     return locked
 
@@ -163,6 +187,13 @@ def expire_stale_signals(now=None):
     for signal in signals:
         signal.status = SignalStatus.EXPIRE
         signal.save(update_fields=["status", "updated_at"])
+        create_in_app_notification(
+            recipient=signal.student.user,
+            title="Signal expiré",
+            message="Votre signal a expiré. Vous pouvez en émettre un nouveau si nécessaire.",
+            metadata={"signal_id": str(signal.pk)},
+            event_key=f"signal:{signal.pk}:expired",
+        )
         _notify(signal_state_changed, signal)
     return len(signals)
 

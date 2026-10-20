@@ -50,6 +50,7 @@ class Notification(BaseModel):
     failed_at = models.DateTimeField(_("échouée le"), null=True, blank=True)
     provider_reference = models.CharField(_("référence prestataire"), max_length=120, blank=True)
     metadata = models.JSONField(_("métadonnées"), default=dict, blank=True)
+    event_key = models.CharField(_("clé d'événement"), max_length=180, null=True, blank=True, editable=False)
 
     class Meta:
         verbose_name = _("notification")
@@ -58,6 +59,13 @@ class Notification(BaseModel):
         indexes = [
             models.Index(fields=("recipient", "status", "created_at")),
             models.Index(fields=("recipient", "read_at", "created_at")),
+        ]
+        constraints = [
+            models.UniqueConstraint(
+                fields=("recipient", "event_key"),
+                condition=models.Q(event_key__isnull=False),
+                name="unique_notification_event_per_recipient",
+            )
         ]
 
     def __str__(self):

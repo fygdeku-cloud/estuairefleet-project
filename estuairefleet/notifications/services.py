@@ -1,3 +1,4 @@
+from django.core.cache import cache
 from django.core.exceptions import PermissionDenied
 from django.db import transaction
 from django.utils import timezone
@@ -8,23 +9,32 @@ from .providers import provider_for
 
 @transaction.atomic
 def create_in_app_notification(
-    *, recipient, title, message, metadata=None, notification_type="information"
+    *, recipient, title, message, metadata=None, notification_type="information", event_key=None
 ) -> Notification:
-    return Notification.objects.create(
-        recipient=recipient,
-        title=title,
-        message=message,
-        notification_type=notification_type,
-        metadata=metadata or {},
-        channel="in_app",
-        status=NotificationStatus.SENT,
-        sent_at=timezone.now(),
-    )
+    defaults = {
+        "title": title,
+        "message": message,
+        "notification_type": notification_type,
+        "metadata": metadata or {},
+        "channel": "in_app",
+        "status": NotificationStatus.SENT,
+        "sent_at": timezone.now(),
+    }
+    if event_key:
+        notification, _ = Notification.objects.get_or_create(
+            recipient=recipient,
+            event_key=event_key,
+            defaults=defaults,
+        )
+    else:
+        notification = Notification.objects.create(recipient=recipient, **defaults)
+    cache.delete(f"estuairefleet:notifications:unread:{recipient.pk}")
+    return notification
 
 
 @transaction.atomic
 def create_notification(
-    *, recipient, title, message, channel="in_app", notification_type="information", metadata=None
+    *, recipient, title, message, channel="in_app", notification_type="information", metadata=None, event_key=None
 ):
     notification = Notification.objects.create(
         recipient=recipient,
@@ -33,35 +43,44 @@ def create_notification(
         channel=channel,
         notification_type=notification_type,
         metadata=metadata or {},
+        event_key=event_key,
     )
     if channel == "in_app":
         notification.status = NotificationStatus.SENT
         notification.sent_at = timezone.now()
         notification.save(update_fields=["status", "sent_at", "updated_at"])
+        cache.delete(f"estuairefleet:notifications:unread:{recipient.pk}")
     return notification
 
 
 @transaction.atomic
 def dispatch_notification(*, notification):
-    if notification.channel == "in_app":
-        return notification
-    provider = provider_for(notification.channel)
+    locked = Notification.objects.select_for_update().select_related("recipient").get(pk=notification.pk)
+    if locked.status != NotificationStatus.PENDING:
+        return locked
+    if locked.channel == "in_app":
+        locked.status = NotificationStatus.SENT
+        locked.sent_at = timezone.now()
+        locked.save(update_fields=["status", "sent_at", "updated_at"])
+        cache.delete(f"estuairefleet:notifications:unread:{locked.recipient_id}")
+        return locked
+    provider = provider_for(locked.channel)
     if provider is None:
         raise ValueError("Canal de notification non pris en charge.")
     try:
         reference = provider.send(
-            recipient=notification.recipient, title=notification.title, message=notification.message
+            recipient=locked.recipient, title=locked.title, message=locked.message
         )
     except Exception:
-        notification.status = NotificationStatus.FAILED
-        notification.failed_at = timezone.now()
-        notification.save(update_fields=["status", "failed_at", "updated_at"])
+        locked.status = NotificationStatus.FAILED
+        locked.failed_at = timezone.now()
+        locked.save(update_fields=["status", "failed_at", "updated_at"])
         raise
-    notification.status = NotificationStatus.SENT
-    notification.sent_at = timezone.now()
-    notification.provider_reference = reference
-    notification.save(update_fields=["status", "sent_at", "provider_reference", "updated_at"])
-    return notification
+    locked.status = NotificationStatus.SENT
+    locked.sent_at = timezone.now()
+    locked.provider_reference = reference
+    locked.save(update_fields=["status", "sent_at", "provider_reference", "updated_at"])
+    return locked
 
 
 @transaction.atomic
@@ -82,6 +101,7 @@ def publish_announcement(*, title, message, by, audience="all"):
                 channel="in_app",
                 status=NotificationStatus.SENT,
                 sent_at=timezone.now(),
+                event_key=f"announcement:{announcement.pk}:{recipient.pk}",
             )
             for recipient in recipients
         ]
@@ -98,4 +118,5 @@ def mark_notification_read(*, notification, user) -> Notification:
     if locked.read_at is None:
         locked.read_at = timezone.now()
         locked.save(update_fields=["read_at", "updated_at"])
+        cache.delete(f"estuairefleet:notifications:unread:{user.pk}")
     return locked

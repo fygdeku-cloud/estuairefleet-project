@@ -48,6 +48,7 @@ def evaluate_route_alert(*, route) -> Alert | None:
                 message=f"{count} signal(s) actif(s) attendent sur {locked_route.name}.",
                 metadata={"alert_id": str(alert.pk), "route_id": str(locked_route.pk)},
                 notification_type="alert",
+                event_key=f"alert:{alert.pk}:driver:{driver.pk}:created",
             )
     else:
         alert.signal_count = count
@@ -86,7 +87,18 @@ def respond_to_alert(*, alert: Alert, driver, response_type, eta_minutes=None, r
         locked.status = AlertStatus.RESOLVED
         locked.resolved_at = timezone.now()
         locked.save(update_fields=["status", "resolved_at", "updated_at"])
-        _notify_waiting_students(locked, "Votre signal a été pris en charge par le chauffeur.")
+        _notify_waiting_students(
+            locked,
+            "Votre signal a été pris en charge par le chauffeur.",
+            notification_type="signal_taken",
+            event_suffix=f"taken:{driver.pk}",
+        )
+        _notify_transport_admins(
+            title="Réponse chauffeur enregistrée",
+            message=f"Le chauffeur a accepté l'alerte du trajet {locked.route.name}.",
+            alert=locked,
+            event_suffix=f"response:{driver.pk}",
+        )
     else:
         locked.status = AlertStatus.RELAY
         locked.motif = reason
@@ -101,7 +113,14 @@ def respond_to_alert(*, alert: Alert, driver, response_type, eta_minutes=None, r
                 message=f"Un relais est demandé pour le trajet {locked.route.name}.",
                 metadata={"alert_id": str(locked.pk), "relay": True},
                 notification_type="alert",
+                event_key=f"alert:{locked.pk}:relay:{relay_bus.pk}",
             )
+        _notify_transport_admins(
+            title="Chauffeur indisponible",
+            message=f"Un relais est demandé pour le trajet {locked.route.name}.",
+            alert=locked,
+            event_suffix=f"unavailable:{driver.pk}",
+        )
     return response
 
 
@@ -125,11 +144,24 @@ def escalate_alert(*, alert: Alert) -> Alert:
                 message=f"Un relais est demandé pour le trajet {locked.route.name}.",
                 metadata={"alert_id": str(locked.pk), "relay": True},
                 notification_type="alert",
+                event_key=f"alert:{locked.pk}:relay:{relay_bus.pk}",
             )
             return locked
     locked.status = AlertStatus.ESCALATED
     locked.escalated_at = timezone.now()
     locked.save(update_fields=["status", "escalated_at", "updated_at"])
+    _notify_waiting_students(
+        locked,
+        "La prise en charge de votre signal est escaladée au responsable transport.",
+        notification_type="escalation",
+        event_suffix="escalated",
+    )
+    _notify_transport_admins(
+        title="Alerte escaladée",
+        message=f"Aucune réponse n'a été reçue pour le trajet {locked.route.name}.",
+        alert=locked,
+        event_suffix="escalated",
+    )
     return locked
 
 
@@ -145,7 +177,12 @@ def respond_to_relay(*, alert, driver, accepted, reason=""):
         locked.status = AlertStatus.RESOLVED
         locked.resolved_at = timezone.now()
         locked.save(update_fields=["status", "resolved_at", "updated_at"])
-        _notify_waiting_students(locked, "Un bus relais a accepté votre demande.")
+        _notify_waiting_students(
+            locked,
+            "Un bus relais a accepté votre demande.",
+            notification_type="signal_taken",
+            event_suffix=f"relay-taken:{driver.pk}",
+        )
     else:
         locked.response_deadline = timezone.now()
         locked.save(update_fields=["response_deadline", "updated_at"])
@@ -167,7 +204,7 @@ def validate_response_type(value):
         raise ValidationError("Réponse chauffeur non reconnue.")
 
 
-def _notify_waiting_students(alert, message):
+def _notify_waiting_students(alert, message, *, notification_type="signal_taken", event_suffix="taken"):
     from estuairefleet.notifications.services import create_in_app_notification
 
     for signal in alert.signals.filter(status="actif").select_related("student__user"):
@@ -176,5 +213,20 @@ def _notify_waiting_students(alert, message):
             title="Signal pris en charge",
             message=message,
             metadata={"alert_id": str(alert.pk)},
-            notification_type="signal_taken",
+            notification_type=notification_type,
+            event_key=f"alert:{alert.pk}:student:{signal.student_id}:{event_suffix}",
+        )
+
+
+def _notify_transport_admins(*, title, message, alert, event_suffix):
+    from estuairefleet.users.models import User
+
+    for user in User.objects.filter(is_active=True, role__in=("admin", "administrator", "staff")):
+        create_in_app_notification(
+            recipient=user,
+            title=title,
+            message=message,
+            metadata={"alert_id": str(alert.pk)},
+            notification_type="escalation" if "escalad" in title.lower() else "alert",
+            event_key=f"alert:{alert.pk}:admin:{user.pk}:{event_suffix}",
         )
