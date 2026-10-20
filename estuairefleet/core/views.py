@@ -1,7 +1,7 @@
 from pathlib import Path
 
 from django.conf import settings
-from django.http import FileResponse, Http404, HttpResponse
+from django.http import FileResponse, Http404, HttpResponse, JsonResponse
 from django.shortcuts import redirect
 from django.urls import reverse
 from django.views import View
@@ -9,7 +9,7 @@ from django.views.generic import TemplateView
 
 from estuairefleet.users.permissions import AdminRequiredMixin
 
-from .selectors import get_operational_statistics
+from .selectors import get_operational_statistics, get_supervision_snapshot
 from .services import export_csv, export_pdf, export_xlsx
 
 
@@ -53,6 +53,11 @@ class AdminDashboardView(AdminRequiredMixin, TemplateView):
         context = super().get_context_data(**kwargs)
         context["statistics"] = get_operational_statistics()
         return context
+
+
+class DashboardLiveView(AdminRequiredMixin, View):
+    def get(self, request, *args, **kwargs):
+        return JsonResponse(get_supervision_snapshot())
 
 
 class OperationalExportView(AdminRequiredMixin, TemplateView):
