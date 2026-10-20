@@ -93,7 +93,7 @@ class Trajet(BaseModel):
         verbose_name = _("trajet")
         verbose_name_plural = _("trajets")
         ordering = ("name", "direction")
-        indexes = [models.Index(fields=("is_active", "direction"), name="fleet_trajet_active_direction_idx")]
+        indexes = [models.Index(fields=("is_active", "direction"), name="fleet_trajet_active_dir_idx")]
 
     def __init__(self, *args, **kwargs):
         if "route_type" in kwargs and "direction" not in kwargs:
