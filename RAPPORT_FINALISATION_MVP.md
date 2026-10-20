@@ -1,78 +1,104 @@
-# Rapport de finalisation du MVP — EstuaireFleet
+# Rapport de finalisation complète du MVP — EstuaireFleet
 
-Date : 19 octobre 2026
+Date : 20 octobre 2026
 
-## A. État du projet avant l'intervention
+## A. État du projet avant cette intervention
 
-Le dépôt était un MVP Django déjà avancé. Les domaines Core & Users, Fleet, Signals, Alerts, Intercampus et Notifications existaient avec leurs modèles, migrations, services, selectors, permissions, vues, templates et endpoints REST secondaires. Le cœur Signal → Alerte → réponse chauffeur → escalade était déjà présent et couvert par des tests.
+Le projet était un MVP Django structuré par domaines, avec les domaines Core, Users, Fleet, Signals, Alerts, Intercampus et Notifications déjà présents. Les modèles, migrations, services, selectors, permissions, vues, API REST, templates Tailwind et premières briques PWA existaient.
 
-Les écarts principaux étaient l'absence de vraie fondation PWA, un contrôle OpenAPI qui échouait avec un utilisateur anonyme, une classe Tailwind non générée dans le template de base et l'impossibilité d'exécuter les contrôles via le `.venv` local illisible de cet environnement.
+L’audit initial a relevé plusieurs écarts : parcours staff Intercampus incomplet, rappel chauffeur calculé sur la fin du cours, absence de badge global de notifications, événements métier non idempotents, supervision sans snapshot unifié, icônes PWA uniquement vectorielles, vues historiques hétérogènes et fermeture incomplète des signaux après réponse chauffeur.
 
-## B. Bugs corrigés
+## B. Modules finalisés
 
-- Ajout d'une route racine `/sw.js` servie avec le bon type MIME et des en-têtes de non-cache.
-- Correction de `UserViewSet` afin que la génération du schéma fonctionne aussi avec `AnonymousUser`.
-- Correction de la classe `text-insam-950`, absente de la palette Tailwind, puis recompilation du bundle CSS.
-- Ajout d'un repli JavaScript local pour le menu mobile et la fermeture des alertes quand Flowbite n'est pas disponible hors connexion.
-- Vérification des migrations, du système Django, du contrôle de déploiement et de la collecte des fichiers statiques.
+### Intercampus
 
-## C. Modules finalisés
+- édition sécurisée des cours et contrôle des transitions métier ;
+- affectation manuelle ou automatique d’un bus sans chevauchement ;
+- actions staff de confirmation, annulation et notification chauffeur ;
+- rappel Celery basé sur `start_at` et non sur la fin du cours ;
+- notifications typées `intercampus` ;
+- selectors enrichis avec les campus, le bus et le chauffeur ;
+- interface de gestion responsive et exploitable sur mobile.
 
-- **Core & Users** : modèle utilisateur UUID, rôles étudiant/chauffeur/administrateur/personnel, authentification par matricule ou e-mail, mot de passe, OTP par e-mail, profils, permissions et API de profil.
-- **Fleet** : campus, trajets, arrêts, bus, affectations, états métier, position du bus, occupation, incidents, ETA et écrans de supervision.
-- **Signals** : un signal actif par étudiant, consentement, géorepérage, TTL, renouvellement limité, annulation, clôture, expiration, anti-abus et purge différée des coordonnées.
-- **Alerts** : seuil configurable par trajet avec valeur par défaut de cinq, notification des chauffeurs, réponse « J'arrive » ou « Indisponible », relais séquentiels, escalade Celery et résolution administrateur.
-- **Intercampus** : cours, campus distincts, horaires valides, affectation de bus sans chevauchement, transitions et rappels.
-- **Notifications** : notifications in-app, e-mail via fournisseur SMTP configuré, canal SMS préparé avec fallback journalisé, lecture limitée au destinataire et tâches Celery.
-- **Frontend** : templates Django server-side, Tailwind CSS, plugin Flowbite, design system rouge INSAM `#C8102E`, Leaflet local et tuiles OpenStreetMap.
-- **API REST** : endpoints secondaires pour les utilisateurs, flotte, signaux, alertes, inter-campus et notifications, avec permissions par rôle.
+### Notifications
 
-## D. Mise en place et finalisation de la PWA
+- notifications in-app limitées au destinataire ;
+- badge non lu dans la navigation et compteur caché court ;
+- clé d’événement unique par destinataire pour éviter les doublons ;
+- branchement sur émission/expiration de signal, alerte, réponse chauffeur, relais, escalade et Intercampus ;
+- dispatch e-mail différé et provider SMS de repli conservés ;
+- verrouillage d’une notification avant envoi et marquage lu atomique ;
+- endpoint API `unread_count` conservé.
 
-- Manifest avec nom, nom court, description, langue, portée `/`, affichage `standalone`, orientation mobile, couleurs INSAM et icônes 192/512.
-- Icônes SVG carrées adaptées à l'installation et au masque des lanceurs.
-- Service worker enregistré depuis le template de base et servi à la racine pour couvrir toute l'application.
-- Cache de l'app shell : page publique À propos, CSS, JavaScript local, Leaflet, manifest, icônes et page de repli.
-- Stratégie réseau : navigation en priorité réseau, page hors connexion de secours et cache-first pour les assets locaux ; les mutations API restent toujours réseau afin de ne pas rejouer une action métier par erreur.
-- Métadonnées d'installation Android/iOS, bandeau d'installation déclenché par le navigateur, état hors connexion et repli du menu mobile.
-- Le mode hors connexion est volontairement basique : les écrans shell restent accessibles, mais l'émission d'un signal nécessite une reconnexion et les tuiles OpenStreetMap ne sont pas mises en cache.
+### Supervision Admin
 
-## E. Inventaire complet actuel du projet
+- endpoint de snapshot protégé pour les données opérationnelles ;
+- rafraîchissement périodique des statistiques, bus, trajets, alertes et incidents ;
+- carte Leaflet des bus géolocalisés ;
+- indicateur de fraîcheur, message de dégradation et arrêt du polling lorsque l’onglet est masqué ;
+- tableau de bord responsive avec liens vers les listes détaillées.
 
-```text
-config/                         settings, URLs, ASGI/WSGI, Celery, routeur API
-compose/                        Dockerfiles local et production
-estuairefleet/core/             socle UUID, géométrie, dashboard, commandes, PWA
-estuairefleet/users/            identité, profils, OTP, permissions, API
-estuairefleet/fleet/            campus, trajets, arrêts, bus, incidents, API
-estuairefleet/signals/          signaux, confidentialité, géorepérage, API, tâches
-estuairefleet/alerts/           seuils, réponses, relais, escalade, API, tâches
-estuairefleet/intercampus/      cours, affectations, rappels, API
-estuairefleet/notifications/   in-app, e-mail/SMS préparés, API, tâches
-estuairefleet/templates/        templates Django et composants communs
-estuairefleet/static/           Tailwind, Flowbite, Leaflet, JavaScript, PWA
-estuairefleet/*/tests/          tests métier, API, confidentialité et PWA
-tests/                          tests d'infrastructure et scripts visuels
-docs/                           architecture, décisions, audit et rapports
-```
+## C. Mise en place et finalisation de la PWA
 
+- manifest complet : nom, description, portée, affichage standalone, orientation, couleurs, catégories et démarrage ;
+- icônes PNG réelles `192x192` et `512x512`, avec variantes SVG conservées ;
+- meta tags mobile, thème rouge et icône Apple ;
+- service worker exposé à `/sw.js` avec MIME JavaScript et en-têtes de non-cache ;
+- cache shell versionné `v3`, récupération tolérante des assets et page offline ;
+- navigation en priorité réseau avec repli vers `/about/` puis l’écran hors connexion ;
+- cache-first des ressources statiques et mise en cache dynamique des assets récupérés ;
+- les mutations métier restent réseau afin d’éviter les actions rejouées hors connexion.
 
-## F. Liste des commits effectués
+## D. Améliorations visuelles et responsivité
 
-Commits de cette finalisation :
+- uniformisation des surfaces, titres, boutons principaux/secondaires, badges et états vides ;
+- refonte de la supervision flotte avec carte et liste de bus ;
+- historique Signal et formulaire de réponse Alerte alignés sur le design system ;
+- tableaux et planning Intercampus placés dans des conteneurs scrollables ;
+- actions tactiles, espacements mobiles, barre de navigation basse et zones sûres conservés ;
+- responsive mobile-first avec Tailwind CSS et Flowbite uniquement ;
+- identité rouge/blanc/noir conservée autour de `#C8102E` et `#9B0C24`.
 
-- `e237370 chore: analyse de l’état actuel du projet avant finalisation`
-- `05b9da2 feat(pwa): ajouter manifest service worker et mode hors connexion`
-- `ad60d3c fix: corriger la robustesse API et finaliser le shell PWA`
-- `bc24ad5 docs: rapport de finalisation complète du MVP EstuaireFleet` (première version du rapport)
-- `bd55b01 fix(pwa): ne pas mettre en cache les écrans privés`
-- Commit final de livraison : `docs: rapport de finalisation complète du MVP EstuaireFleet`.
+## E. Corrections du parcours critique Signal → Alerte
 
-Principaux commits fonctionnels déjà présents dans l'historique : finalisation Users, Fleet, Signals, Alerts, Intercampus/Notifications, Core/API et suivi temps réel des bus.
+- consentement, position GPS, géorepérage, anti-abus et limite d’un signal actif conservés ;
+- évaluation du seuil et création d’alerte protégées par transaction et verrou de trajet ;
+- réponse « J’arrive » validée avec ETA ;
+- réponse « Indisponible » validée avec motif et bus relais ;
+- relais séquentiels protégés par tentatives uniques et délai de réponse ;
+- timeout Celery et escalade finale idempotente ;
+- prise en charge chauffeur ou relais ferme atomiquement les signaux actifs concernés ;
+- clôture administrateur ferme également les signaux ;
+- les réponses concurrentes d’un autre chauffeur ne remplacent plus la réponse déjà enregistrée ;
+- notifications de prise en charge et d’escalade alignées avec l’état réel des signaux.
 
-## G. Démarrer le projet en local
+## F. Optimisations de performance backend
 
-### Avec uv
+- indexes ajoutés sur l’activité des trajets et les positions opérationnelles des bus ;
+- agrégation SQL du nombre de signaux par trajet ;
+- suppression d’un N+1 lors de la résolution d’un trajet habituel ;
+- `select_related` et `prefetch_related` maintenus sur les écrans et services sensibles ;
+- cache court Redis-compatible pour statistiques, seuils, compteurs et positions de supervision ;
+- itération Celery bornée et ordonnée pour alertes, cours et notifications ;
+- tâches d’expiration, d’escalade et de rappel conservées dans le beat Celery ;
+- caches courts adaptés au polling sans masquer durablement les changements métier.
+
+## G. Liste complète des commits effectués
+
+1. `818ca41 chore: analyse complète de l’existant avant finalisation MVP`
+2. `e6161e1 feat(intercampus): finalisation complète du module Cours inter-campus`
+3. `e3830cb feat(notifications): finalisation du système de notifications in-app et email`
+4. `1a29862 feat(admin): finalisation du module de supervision et tableau de bord admin`
+5. `829034d feat(pwa): PWA réellement installable avec service worker et manifest complets`
+6. `5a10d9b feat(ui): amélioration visuelle majeure et responsivité totale mobile-first`
+7. `c82f663 fix: renforcement et correction du parcours critique Signal → Alerte → Escalade`
+8. `c36ddcc perf(backend): optimisation des requêtes, indexes et mise en cache Redis`
+9. `149091c chore: nettoyage final du projet avant livraison MVP`
+10. `docs: rapport de finalisation complète du MVP EstuaireFleet` — présent commit documentaire.
+
+## H. Comment démarrer le projet en local
+
+### Avec uv et npm
 
 ```bash
 cp .env.example .env
@@ -84,7 +110,7 @@ uv run python manage.py seed_demo
 uv run python manage.py runserver
 ```
 
-L'application est disponible sur `http://localhost:8000`. Le jeu de démonstration est réservé au mode DEBUG. Les comptes et le mot de passe sont indiqués par la commande `seed_demo`.
+L’application est disponible sur `http://localhost:8000`. PostgreSQL et Redis doivent être accessibles selon le contenu du fichier `.env`.
 
 ### Avec Docker Compose
 
@@ -100,24 +126,24 @@ docker compose --env-file .env -f docker-compose.local.yml exec django python ma
 docker compose --env-file .env -f docker-compose.local.yml exec django python manage.py seed_demo
 ```
 
-L'application est alors disponible sur `http://localhost:8001` et la boîte de développement sur `http://localhost:8025`.
-
 ### Contrôles qualité
 
 ```bash
 UV_PROJECT_ENVIRONMENT=/tmp/estuairefleet-venv uv run pytest -q
 UV_PROJECT_ENVIRONMENT=/tmp/estuairefleet-venv uv run ruff check .
+UV_PROJECT_ENVIRONMENT=/tmp/estuairefleet-venv uv run ruff format --check .
 UV_PROJECT_ENVIRONMENT=/tmp/estuairefleet-venv uv run python manage.py check
+npm run build:css
 ```
 
-Résultat final : **28 tests passants**, Ruff propre, migrations cohérentes, `check --deploy` propre et `collectstatic` réussi.
+État vérifié lors de la livraison : **29 tests passants**, Ruff check et formatage propres, `manage.py check` propre, migrations cohérentes et scripts JavaScript valides.
 
-## H. Ce qui reste éventuel et points d'attention
+## I. Points d’attention restants
 
-- Brancher un véritable fournisseur SMS si ce canal devient nécessaire en production ; le provider actuel journalise le fallback.
-- Prévoir les secrets, certificats, sauvegardes PostgreSQL, supervision et reverse proxy de production.
-- Effectuer une recette navigateur sur Android/iOS pour confirmer l'installation PWA selon les versions ciblées.
-- Les cartes nécessitent une connexion pour les tuiles OpenStreetMap ; les données métier restent protégées par les permissions et le polling.
-- L'émission d'un signal n'est pas mise en file hors connexion afin d'éviter de créer un signal avec une position devenue obsolète.
-
-Aucune application mobile native n'est prévue : l'expérience mobile est portée par la PWA installable.
+- PostgreSQL et Redis doivent être configurés avec des identifiants valides avant un déploiement réel ;
+- les tâches Celery worker/beat doivent être lancées pour les expirations, rappels, dispatch et escalades ;
+- les tuiles OpenStreetMap nécessitent une connexion réseau ;
+- le mode offline reste limité au shell public et aux assets déjà disponibles ;
+- le provider SMS actuel est une structure de repli journalisée et devra être remplacé par un fournisseur opérationnel si nécessaire ;
+- une recette navigateur Android, iOS, tablette et desktop reste recommandée avant production ;
+- la supervision temps réel repose sur un polling borné, adapté au MVP mais à surveiller avec la montée en charge.
