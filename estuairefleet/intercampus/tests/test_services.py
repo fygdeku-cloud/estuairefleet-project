@@ -45,7 +45,8 @@ def test_course_validation_transition_and_driver_notification():
     course.refresh_from_db()
     assert course.status == IntercampusCourseStatus.CONFIRMED
     assert course.driver_notified_at is not None
-    assert driver.notifications.filter(title="Cours inter-campus planifié").exists()
+    notification = driver.notifications.get(title="Cours inter-campus planifié")
+    assert notification.notification_type == "intercampus"
 
 
 @pytest.mark.django_db

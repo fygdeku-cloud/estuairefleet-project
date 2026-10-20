@@ -12,14 +12,14 @@ def notify_upcoming_courses():
     now = timezone.now()
     courses = CoursInterCampus.objects.filter(
         status__in=(IntercampusCourseStatus.PLANNED, IntercampusCourseStatus.CONFIRMED),
-        horaire_fin__lte=now + timedelta(minutes=60),
-        horaire_fin__gte=now,
+        start_at__lte=now + timedelta(minutes=60),
+        start_at__gte=now,
         bus_affecte__chauffeur__isnull=False,
-    )
+    ).select_related("bus_affecte__chauffeur__user")
     count = 0
     for course in courses:
         if (
-            course.horaire_fin <= now + timedelta(minutes=course.notify_before_minutes)
+            course.start_at <= now + timedelta(minutes=course.notify_before_minutes)
             and not course.driver_notified_at
         ):
             notify_upcoming_course(course=course)
@@ -27,7 +27,7 @@ def notify_upcoming_courses():
         elif (
             course.driver_notified_at
             and not course.reminder_sent_at
-            and course.horaire_fin <= now + timedelta(minutes=10)
+            and course.start_at <= now + timedelta(minutes=10)
         ):
             send_course_reminder(course=course)
             count += 1

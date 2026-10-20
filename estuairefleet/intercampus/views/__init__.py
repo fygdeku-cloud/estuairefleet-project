@@ -1,3 +1,21 @@
-from .pages import CourseCreateView, CourseListView, CourseManageListView, CourseTransitionView
+from .pages import (
+    CourseAssignBusView,
+    CourseCancelView,
+    CourseCreateView,
+    CourseListView,
+    CourseManageListView,
+    CourseNotifyDriverView,
+    CourseTransitionView,
+    CourseUpdateView,
+)
 
-__all__ = ["CourseCreateView", "CourseListView", "CourseManageListView", "CourseTransitionView"]
+__all__ = [
+    "CourseAssignBusView",
+    "CourseCancelView",
+    "CourseCreateView",
+    "CourseListView",
+    "CourseManageListView",
+    "CourseNotifyDriverView",
+    "CourseTransitionView",
+    "CourseUpdateView",
+]

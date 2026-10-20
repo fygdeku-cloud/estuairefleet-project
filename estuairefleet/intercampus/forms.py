@@ -18,6 +18,11 @@ class CoursInterCampusForm(forms.ModelForm):
             "status",
         )
         widgets = {
-            "start_at": forms.DateTimeInput(attrs={"type": "datetime-local"}),
-            "horaire_fin": forms.DateTimeInput(attrs={"type": "datetime-local"}),
+            "start_at": forms.DateTimeInput(attrs={"type": "datetime-local", "class": "ef-input"}),
+            "horaire_fin": forms.DateTimeInput(attrs={"type": "datetime-local", "class": "ef-input"}),
         }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        for field in self.fields.values():
+            field.widget.attrs.setdefault("class", "ef-input")

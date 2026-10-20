@@ -20,6 +20,8 @@ def create_course(**data) -> CoursInterCampus:
 @transaction.atomic
 def update_course(*, course: CoursInterCampus, **data) -> CoursInterCampus:
     locked = CoursInterCampus.objects.select_for_update().get(pk=course.pk)
+    if "status" in data and data["status"] != locked.status:
+        validate_course_status_transition(current=locked.status, target=data["status"])
     schedule_changed = any(key in data for key in ("start_at", "horaire_fin", "bus_affecte", "status"))
     for key, value in data.items():
         setattr(locked, key, value)
@@ -96,6 +98,7 @@ def mark_driver_notified(*, course: CoursInterCampus) -> CoursInterCampus:
         title="Cours inter-campus planifié",
         message=f"Le cours {locked.group} commence le {locked.start_at:%d/%m à %H:%M}.",
         metadata={"course_id": str(locked.pk)},
+        notification_type="intercampus",
     )
     return locked
 
@@ -121,6 +124,7 @@ def send_course_reminder(*, course: CoursInterCampus) -> CoursInterCampus:
         title="Rappel de cours inter-campus",
         message=f"Le déplacement du groupe {locked.group} approche.",
         metadata={"course_id": str(locked.pk), "reminder": True},
+        notification_type="intercampus",
     )
     return locked
 

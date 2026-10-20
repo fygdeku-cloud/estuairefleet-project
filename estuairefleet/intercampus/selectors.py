@@ -16,9 +16,9 @@ def get_upcoming_courses() -> QuerySet[CoursInterCampus]:
 
 
 def get_manageable_courses() -> QuerySet[CoursInterCampus]:
-    return CoursInterCampus.objects.select_related("campus_depart", "campus_arrivee", "bus_affecte").order_by(
-        "start_at"
-    )
+    return CoursInterCampus.objects.select_related(
+        "campus_depart", "campus_arrivee", "bus_affecte__chauffeur__user"
+    ).order_by("start_at")
 
 
 def get_course_detail(course_id) -> CoursInterCampus:
