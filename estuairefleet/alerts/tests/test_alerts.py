@@ -32,7 +32,7 @@ def test_alert_notifies_assigned_driver_and_accepts_response():
     bus = Bus.objects.create(
         plate_number="CE-ALERT", capacity=20, status=BusStatus.DISPONIBLE, chauffeur=chauffeur, trajet=route
     )
-    make_student(1, route)
+    student = make_student(1, route)
 
     alert = evaluate_route_alert(route=route)
 
@@ -46,6 +46,10 @@ def test_alert_notifies_assigned_driver_and_accepts_response():
     )
     assert response.driver_id == driver.pk
     assert alert.__class__.objects.get(pk=alert.pk).status == AlertStatus.RESOLVED
+    student.refresh_from_db()
+    signal = student.signals.get()
+    assert signal.status == "pris_en_charge"
+    assert signal.taken_by_bus_id == bus.pk
     assert bus.pk is not None
 
 
@@ -113,7 +117,7 @@ def test_relay_is_accepted_or_passes_to_the_next_bus():
             )
         )
         relay_users.append(user)
-    make_student(20, route)
+    student = make_student(20, route)
     alert = evaluate_route_alert(route=route)
 
     respond_to_alert(
@@ -127,3 +131,4 @@ def test_relay_is_accepted_or_passes_to_the_next_bus():
     resolved = respond_to_relay(alert=alert, driver=relay_users[1], accepted=True)
 
     assert resolved.status == AlertStatus.RESOLVED
+    assert student.signals.filter(status="pris_en_charge").exists()

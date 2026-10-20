@@ -7,6 +7,7 @@ from django.utils import timezone
 from estuairefleet.core import conf
 from estuairefleet.core.constants import INTERMEDIATE_ALERT_DELAY
 from estuairefleet.notifications.services import create_in_app_notification
+from estuairefleet.signals.models import SignalStatus
 from estuairefleet.signals.selectors import get_active_signals_for_trajet
 
 from .models import Alert, AlertRelayAttempt, AlertResponse, AlertStatus, DriverResponseType
@@ -60,7 +61,7 @@ def evaluate_route_alert(*, route) -> Alert | None:
 
 @transaction.atomic
 def respond_to_alert(*, alert: Alert, driver, response_type, eta_minutes=None, reason="", relay_bus=None):
-    locked = Alert.objects.select_for_update().select_related("route").get(pk=alert.pk)
+    locked = Alert.objects.select_for_update().select_related("route", "relay_bus__chauffeur").get(pk=alert.pk)
     is_route_driver = locked.route.buses.filter(chauffeur__user=driver).exists()
     is_relay_driver = bool(
         locked.relay_bus_id and locked.relay_bus.chauffeur and locked.relay_bus.chauffeur.user_id == driver.pk
@@ -80,10 +81,14 @@ def respond_to_alert(*, alert: Alert, driver, response_type, eta_minutes=None, r
     response.full_clean()
     existing_response = AlertResponse.objects.filter(alert=locked).first()
     if existing_response:
+        if existing_response.driver_id != driver.pk:
+            raise ValidationError("Un autre chauffeur a déjà répondu à cette alerte.")
         response.pk = existing_response.pk
         response.responded_at = existing_response.responded_at
     response.save()
     if response_type == DriverResponseType.ARRIVING:
+        responding_bus = locked.relay_bus if is_relay_driver else driver.chauffeur.bus
+        _take_alert_signals(alert=locked, by=driver, bus=responding_bus)
         locked.status = AlertStatus.RESOLVED
         locked.resolved_at = timezone.now()
         locked.save(update_fields=["status", "resolved_at", "updated_at"])
@@ -174,6 +179,7 @@ def respond_to_relay(*, alert, driver, accepted, reason=""):
     attempt.accepted, attempt.reason, attempt.responded_at = accepted, reason, timezone.now()
     attempt.save(update_fields=["accepted", "reason", "responded_at", "updated_at"])
     if accepted:
+        _take_alert_signals(alert=locked, by=driver, bus=locked.relay_bus)
         locked.status = AlertStatus.RESOLVED
         locked.resolved_at = timezone.now()
         locked.save(update_fields=["status", "resolved_at", "updated_at"])
@@ -195,7 +201,9 @@ def resolve_alert(*, alert: Alert, by) -> Alert:
     if not _is_transport_admin(by):
         raise PermissionDenied("Seul un responsable transport peut clôturer une alerte.")
     locked = Alert.objects.select_for_update().get(pk=alert.pk)
+    _take_alert_signals(alert=locked, by=by)
     locked.mark_resolved()
+    _notify_waiting_students(locked, "Le responsable transport a clôturé votre signal.")
     return locked
 
 
@@ -207,15 +215,30 @@ def validate_response_type(value):
 def _notify_waiting_students(alert, message, *, notification_type="signal_taken", event_suffix="taken"):
     from estuairefleet.notifications.services import create_in_app_notification
 
-    for signal in alert.signals.filter(status="actif").select_related("student__user"):
+    title = "Alerte escaladée" if notification_type == "escalation" else "Signal pris en charge"
+    for signal in alert.signals.filter(status__in=(SignalStatus.ACTIF, SignalStatus.PRIS_EN_CHARGE)).select_related(
+        "student__user"
+    ):
         create_in_app_notification(
             recipient=signal.student.user,
-            title="Signal pris en charge",
+            title=title,
             message=message,
             metadata={"alert_id": str(alert.pk)},
             notification_type=notification_type,
             event_key=f"alert:{alert.pk}:student:{signal.student_id}:{event_suffix}",
         )
+
+
+def _take_alert_signals(*, alert, by, bus=None):
+    now = timezone.now()
+    signals = list(alert.signals.select_for_update().filter(status=SignalStatus.ACTIF))
+    for signal in signals:
+        signal.status = SignalStatus.PRIS_EN_CHARGE
+        signal.taken_at = now
+        signal.taken_by_bus = bus
+        signal.closed_by = by
+        signal.save(update_fields=["status", "taken_at", "taken_by_bus", "closed_by", "updated_at"])
+    return len(signals)
 
 
 def _notify_transport_admins(*, title, message, alert, event_suffix):
