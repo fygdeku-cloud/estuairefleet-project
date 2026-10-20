@@ -56,7 +56,6 @@ tests/                          tests d'infrastructure et scripts visuels
 docs/                           architecture, décisions, audit et rapports
 ```
 
-Le contrôle d'exclusion métier confirme qu'aucun modèle, champ, endpoint, template ou test ne porte de fonctionnalité financière. Les occurrences de `transaction` conservées sont exclusivement celles de `django.db.transaction.atomic`, utilisées pour garantir l'atomicité des écritures.
 
 ## F. Liste des commits effectués
 

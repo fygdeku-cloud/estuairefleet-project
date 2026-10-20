@@ -27,7 +27,6 @@ Le niveau retenu avant finalisation est donc : **fonctionnel avancé, PWA manqua
 - Les cartes disposent de pages et de polling, mais les parcours doivent être vérifiés dans le navigateur avec les routes API réellement disponibles.
 - L'ancienne feuille CSS `design-system.css` coexiste avec le rendu Tailwind ; elle doit rester compatible sans réintroduire un second système visuel.
 - Le fichier `.venv` local est illisible dans cet environnement ; les contrôles doivent utiliser un environnement uv temporaire distinct.
-- Le contrôle du périmètre métier ne retourne aucun module financier ; les occurrences de `transaction` restantes correspondent exclusivement à `django.db.transaction.atomic`.
 
 ## Plan de finalisation
 

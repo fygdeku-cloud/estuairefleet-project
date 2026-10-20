@@ -86,7 +86,9 @@ def count_active_signals(trajet):
 
 def get_active_signals_by_trajet():
     rows = (
-        Signal.objects.filter(status=SignalStatus.ACTIF, expires_at__gt=timezone.now()).values("trajet_id").order_by()
+        Signal.objects.filter(status=SignalStatus.ACTIF, expires_at__gt=timezone.now())
+        .values("trajet_id")
+        .order_by()
         .annotate(count=Count("id"))
     )
     return {row["trajet_id"]: row["count"] for row in rows}

@@ -68,9 +68,7 @@ def dispatch_notification(*, notification):
     if provider is None:
         raise ValueError("Canal de notification non pris en charge.")
     try:
-        reference = provider.send(
-            recipient=locked.recipient, title=locked.title, message=locked.message
-        )
+        reference = provider.send(recipient=locked.recipient, title=locked.title, message=locked.message)
     except Exception:
         locked.status = NotificationStatus.FAILED
         locked.failed_at = timezone.now()

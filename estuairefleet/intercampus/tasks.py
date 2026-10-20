@@ -18,10 +18,7 @@ def notify_upcoming_courses():
     ).select_related("bus_affecte__chauffeur__user")
     count = 0
     for course in courses.iterator(chunk_size=100):
-        if (
-            course.start_at <= now + timedelta(minutes=course.notify_before_minutes)
-            and not course.driver_notified_at
-        ):
+        if course.start_at <= now + timedelta(minutes=course.notify_before_minutes) and not course.driver_notified_at:
             notify_upcoming_course(course=course)
             count += 1
         elif (

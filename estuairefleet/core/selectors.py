@@ -49,16 +49,32 @@ def get_operational_statistics():
 
 def get_supervision_snapshot():
     def build_snapshot():
-        open_alerts = Alert.objects.filter(
-            status__in=(AlertStatus.PENDING, AlertStatus.TRIGGERED, AlertStatus.IN_PROGRESS, AlertStatus.RELAY, AlertStatus.ESCALATED)
-        ).select_related("route").order_by("-priority", "created_at")[:8]
-        open_incidents = Incident.objects.exclude(status=IncidentStatus.RESOLU).select_related("bus", "trajet").order_by(
-            "-reported_at"
-        )[:8]
-        routes = Trajet.objects.filter(is_active=True).annotate(
-            bus_count=Count("buses", distinct=True),
-            active_signal_count=Count("signals", filter=Q(signals__status=SignalStatus.ACTIF), distinct=True),
-        ).order_by("name")[:12]
+        open_alerts = (
+            Alert.objects.filter(
+                status__in=(
+                    AlertStatus.PENDING,
+                    AlertStatus.TRIGGERED,
+                    AlertStatus.IN_PROGRESS,
+                    AlertStatus.RELAY,
+                    AlertStatus.ESCALATED,
+                )
+            )
+            .select_related("route")
+            .order_by("-priority", "created_at")[:8]
+        )
+        open_incidents = (
+            Incident.objects.exclude(status=IncidentStatus.RESOLU)
+            .select_related("bus", "trajet")
+            .order_by("-reported_at")[:8]
+        )
+        routes = (
+            Trajet.objects.filter(is_active=True)
+            .annotate(
+                bus_count=Count("buses", distinct=True),
+                active_signal_count=Count("signals", filter=Q(signals__status=SignalStatus.ACTIF), distinct=True),
+            )
+            .order_by("name")[:12]
+        )
         buses = Bus.objects.filter(position_lat__isnull=False, position_lng__isnull=False).values(
             "id", "plate_number", "status", "position_lat", "position_lng", "position_updated_at", "trajet__name"
         )[:100]
@@ -98,7 +114,12 @@ def get_supervision_snapshot():
                 for incident in open_incidents
             ],
             "routes": [
-                {"id": str(route.pk), "name": route.name, "buses": route.bus_count, "signals": route.active_signal_count}
+                {
+                    "id": str(route.pk),
+                    "name": route.name,
+                    "buses": route.bus_count,
+                    "signals": route.active_signal_count,
+                }
                 for route in routes
             ],
         }
