@@ -1,3 +1,4 @@
+from django.core.cache import cache
 from django.db import models
 from django.db.models import Count
 from django.utils import timezone
@@ -25,22 +26,25 @@ def get_trajets_in_service(now=None):
 
 
 def get_buses_for_map(user=None):
-    return list(
-        Bus.objects.filter(trajet__is_active=True)
-        .select_related("trajet", "chauffeur__user")
-        .values(
-            "id",
-            "plate_number",
-            "status",
-            "position_lat",
-            "position_lng",
-            "position_updated_at",
-            "trajet_id",
-            "trajet__name",
-            "places_occupees",
-            "capacity",
+    def load_buses():
+        return list(
+            Bus.objects.filter(trajet__is_active=True)
+            .select_related("trajet", "chauffeur__user")
+            .values(
+                "id",
+                "plate_number",
+                "status",
+                "position_lat",
+                "position_lng",
+                "position_updated_at",
+                "trajet_id",
+                "trajet__name",
+                "places_occupees",
+                "capacity",
+            )
         )
-    )
+
+    return cache.get_or_set("estuairefleet:fleet:map:v1", load_buses, timeout=5)
 
 
 def get_bus_for_chauffeur(user):
@@ -52,7 +56,11 @@ def get_buses_for_trajet(trajet):
 
 
 def get_fleet_overview_counts():
-    return {row["status"]: row["count"] for row in Bus.objects.values("status").annotate(count=Count("id"))}
+    return cache.get_or_set(
+        "estuairefleet:fleet:counts:v1",
+        lambda: {row["status"]: row["count"] for row in Bus.objects.values("status").annotate(count=Count("id"))},
+        timeout=15,
+    )
 
 
 def get_campuses():

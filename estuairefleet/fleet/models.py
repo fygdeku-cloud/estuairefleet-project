@@ -93,6 +93,7 @@ class Trajet(BaseModel):
         verbose_name = _("trajet")
         verbose_name_plural = _("trajets")
         ordering = ("name", "direction")
+        indexes = [models.Index(fields=("is_active", "direction"), name="fleet_trajet_active_direction_idx")]
 
     def __init__(self, *args, **kwargs):
         if "route_type" in kwargs and "direction" not in kwargs:
@@ -201,7 +202,11 @@ class Bus(BaseModel):
             models.CheckConstraint(condition=models.Q(capacity__gt=0), name="bus_capacity_positive"),
             models.CheckConstraint(condition=models.Q(places_occupees__gte=0), name="bus_occupancy_positive"),
         ]
-        indexes = [models.Index(fields=("status",)), models.Index(fields=("trajet", "status"))]
+        indexes = [
+            models.Index(fields=("status",)),
+            models.Index(fields=("trajet", "status")),
+            models.Index(fields=("trajet", "status", "position_updated_at"), name="fleet_bus_map_position_idx"),
+        ]
 
     def clean(self):
         errors = {}

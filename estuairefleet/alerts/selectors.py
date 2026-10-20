@@ -1,3 +1,4 @@
+from django.core.cache import cache
 from django.db.models import F, QuerySet
 from django.utils import timezone
 
@@ -45,10 +46,15 @@ def get_alert_detail(alert_id, *, driver=None) -> Alert:
 
 def get_threshold_for_route(route, *, at=None):
     at = at or timezone.localtime()
-    for schedule in AlertThresholdSchedule.objects.filter(route=route, is_active=True).order_by("start_time"):
-        if schedule.matches(at.time()):
-            return schedule.threshold
-    return route.seuil_alerte
+    key = f"estuairefleet:alerts:threshold:{route.pk}:{at:%Y%m%d%H%M}"
+
+    def resolve_threshold():
+        for schedule in AlertThresholdSchedule.objects.filter(route=route, is_active=True).order_by("start_time"):
+            if schedule.matches(at.time()):
+                return schedule.threshold
+        return route.seuil_alerte
+
+    return cache.get_or_set(key, resolve_threshold, timeout=60)
 
 
 def get_next_relay_bus(alert, *, excluded_ids=()):

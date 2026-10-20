@@ -1,4 +1,4 @@
-from django.db.models import Q
+from django.db.models import Count, Q
 from django.utils import timezone
 
 from estuairefleet.core.geo import distance_point_to_polyline_m, haversine_m
@@ -85,18 +85,17 @@ def count_active_signals(trajet):
 
 
 def get_active_signals_by_trajet():
-    signals = (
+    rows = (
         Signal.objects.filter(status=SignalStatus.ACTIF, expires_at__gt=timezone.now()).values("trajet_id").order_by()
+        .annotate(count=Count("id"))
     )
-    result = {}
-    for row in signals:
-        result[row["trajet_id"]] = result.get(row["trajet_id"], 0) + 1
-    return result
+    return {row["trajet_id"]: row["count"] for row in rows}
 
 
 def resolve_trajet_for_position(student, lat, lng, now=None):
     profile = _student_profile(student)
     point = (float(lat), float(lng))
+    usual_trajet_ids = set(profile.trajets_habituels.values_list("pk", flat=True)) if profile else set()
     candidates = []
     for trajet in Trajet.objects.filter(is_active=True).prefetch_related("stops", "campuses"):
         if not trajet.is_in_service(now):
@@ -106,7 +105,7 @@ def resolve_trajet_for_position(student, lat, lng, now=None):
         distances.extend(haversine_m(point, campus.point) for campus in trajet.campuses.all())
         distance = min(distances)
         if distance <= trajet.geofence_radius_m:
-            usual = trajet in profile.trajets_habituels.all() if profile else False
+            usual = trajet.pk in usual_trajet_ids
             candidates.append((not usual, distance, trajet))
     candidates.sort(key=lambda item: (item[0], item[1]))
     return [item[2] for item in candidates]

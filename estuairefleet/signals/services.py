@@ -183,7 +183,11 @@ def expire_signal(signal):
 @transaction.atomic
 def expire_stale_signals(now=None):
     now = now or timezone.now()
-    signals = list(Signal.objects.select_for_update().filter(status=SignalStatus.ACTIF, expires_at__lte=now))
+    signals = list(
+        Signal.objects.select_for_update()
+        .select_related("student__user")
+        .filter(status=SignalStatus.ACTIF, expires_at__lte=now)
+    )
     for signal in signals:
         signal.status = SignalStatus.EXPIRE
         signal.save(update_fields=["status", "updated_at"])

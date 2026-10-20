@@ -10,8 +10,8 @@ def dispatch_pending_notifications():
     notifications = Notification.objects.filter(
         status=NotificationStatus.PENDING,
         channel__in=("email", "sms"),
-    )[:100]
-    for notification in notifications:
+    ).order_by("created_at")[:100]
+    for notification in notifications.iterator(chunk_size=100):
         try:
             dispatch_notification(notification=notification)
         except Exception:

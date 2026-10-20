@@ -16,7 +16,7 @@ def escalate_timed_out_alerts():
         response_deadline__lte=timezone.now(),
     ).order_by("response_deadline")[:100]
     count = 0
-    for alert in alerts:
+    for alert in alerts.iterator(chunk_size=100):
         escalate_alert(alert=alert)
         count += 1
     return count
@@ -30,7 +30,7 @@ def evaluate_active_routes():
         .values_list("trajet_id", flat=True)
         .distinct()
     )
-    for route in Trajet.objects.filter(pk__in=route_ids).only("pk"):
+    for route in Trajet.objects.filter(pk__in=route_ids).only("pk").iterator(chunk_size=100):
         if evaluate_route_alert(route=route) is not None:
             count += 1
     return count
