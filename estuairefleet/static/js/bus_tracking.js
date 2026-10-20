@@ -3,7 +3,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const shareButton = document.querySelector("[data-share-bus-position]");
   const shareStatus = document.querySelector("[data-bus-share-status]");
   const degraded = document.querySelector("[data-bus-degraded]");
-  const csrf = document.cookie.split(";").map((item) => item.trim()).find((item) => item.startsWith("csrftoken="))?.split("=")[1];
+  const csrf = document.querySelector("input[name='csrfmiddlewaretoken']")?.value;
   let watchId;
   let pollTimer;
   let controller;

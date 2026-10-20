@@ -30,7 +30,7 @@
 document.getElementById("signal-emit")?.addEventListener("click", function () {
   const button = this;
   const status = document.getElementById("signal-status");
-  const csrf = document.cookie.split(";").map((item) => item.trim()).find((item) => item.startsWith("csrftoken="))?.split("=")[1];
+  const csrf = document.querySelector("input[name='csrfmiddlewaretoken']")?.value;
   button.setAttribute("aria-busy", "true");
   status.textContent = "Localisation en cours…";
   if (!navigator.geolocation) { status.textContent = "La géolocalisation est indisponible sur cet appareil."; button.removeAttribute("aria-busy"); return; }
