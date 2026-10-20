@@ -1,10 +1,10 @@
-const CACHE_NAME = "estuairefleet-shell-v2";
+const CACHE_NAME = "estuairefleet-shell-v3";
 const APP_SHELL = [
   "/about/",
   "/static/pwa/manifest.json",
   "/static/pwa/offline.html",
-  "/static/pwa/icons/icon-192.svg",
-  "/static/pwa/icons/icon-512.svg",
+  "/static/pwa/icons/icon-192.png",
+  "/static/pwa/icons/icon-512.png",
   "/static/css/tailwind.css",
   "/static/css/design-system.css",
   "/static/css/domains/alerts.css",
@@ -19,7 +19,18 @@ const APP_SHELL = [
 ];
 
 self.addEventListener("install", (event) => {
-  event.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.addAll(APP_SHELL)).then(() => self.skipWaiting()));
+  event.waitUntil(
+    caches.open(CACHE_NAME).then(async (cache) => {
+      await Promise.all(APP_SHELL.map(async (asset) => {
+        try {
+          const response = await fetch(asset, { cache: "no-cache" });
+          if (response.ok) await cache.put(asset, response);
+        } catch (error) {
+          // Un asset non essentiel ne doit pas empêcher l'installation du shell.
+        }
+      }));
+    }).then(() => self.skipWaiting()),
+  );
 });
 
 self.addEventListener("activate", (event) => {
@@ -36,12 +47,21 @@ self.addEventListener("fetch", (event) => {
 
   if (request.mode === "navigate") {
     event.respondWith(
-      fetch(request).catch(() => caches.match(request).then((cached) => cached || caches.match("/static/pwa/offline.html"))),
+      fetch(request)
+        .catch(() => caches.match(request))
+        .then((cached) => cached || caches.match("/about/"))
+        .then((cached) => cached || caches.match("/static/pwa/offline.html")),
     );
     return;
   }
 
   if (url.pathname.startsWith("/static/")) {
-    event.respondWith(caches.match(request).then((cached) => cached || fetch(request)));
+    event.respondWith(caches.match(request).then((cached) => cached || fetch(request).then((response) => {
+      if (response.ok) {
+        const clone = response.clone();
+        caches.open(CACHE_NAME).then((cache) => cache.put(request, clone));
+      }
+      return response;
+    })));
   }
 });

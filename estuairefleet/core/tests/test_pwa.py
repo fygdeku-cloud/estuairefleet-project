@@ -1,3 +1,4 @@
+import json
 from datetime import timedelta
 from pathlib import Path
 
@@ -19,7 +20,7 @@ def test_service_worker_is_served_at_root(client):
 
     assert response.status_code == 200
     assert response["Content-Type"].startswith("application/javascript")
-    assert b"estuairefleet-shell-v2" in b"".join(response.streaming_content)
+    assert b"estuairefleet-shell-v3" in b"".join(response.streaming_content)
 
 
 def test_pwa_assets_are_present():
@@ -28,8 +29,14 @@ def test_pwa_assets_are_present():
     assert (static_root / "manifest.json").is_file()
     assert (static_root / "service-worker.js").is_file()
     assert (static_root / "offline.html").is_file()
+    assert (static_root / "icons" / "icon-192.png").is_file()
+    assert (static_root / "icons" / "icon-512.png").is_file()
     assert (static_root / "icons" / "icon-192.svg").is_file()
     assert (static_root / "icons" / "icon-512.svg").is_file()
+
+    manifest = json.loads((static_root / "manifest.json").read_text())
+    assert {icon["sizes"] for icon in manifest["icons"]} >= {"192x192", "512x512"}
+    assert all(icon["type"] == "image/png" for icon in manifest["icons"])
 
 
 @pytest.mark.django_db
