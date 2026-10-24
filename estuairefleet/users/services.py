@@ -53,7 +53,10 @@ def create_user_with_profile(
         raise ValueError("Rôle inconnu.")
     if role == UserRole.STUDENT and not (matricule or profile_data.get("matricule")):
         raise ValueError("Le matricule est obligatoire pour un étudiant.")
-    profile_data.pop("matricule", None)
+    if role == UserRole.STUDENT:
+        profile_data["matricule"] = matricule or profile_data["matricule"]
+    else:
+        profile_data.pop("matricule", None)
     profile_model.objects.create(user=user, **profile_data)
     return user, temporary_password
 
