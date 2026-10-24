@@ -1,12 +1,9 @@
-from datetime import timedelta
-
 from django.core.exceptions import PermissionDenied, ValidationError
 from django.db import transaction
 from django.utils import timezone
 
-from estuairefleet.core import conf
 from estuairefleet.core.exceptions import InvalidBusTransition
-from estuairefleet.core.geo import haversine_m, is_valid_lat_lng
+from estuairefleet.core.geo import is_valid_lat_lng
 
 from .models import Bus, BusStatus, Campus, Incident, IncidentStatus, Stop, Trajet
 
@@ -34,13 +31,6 @@ def update_campus(*, campus, **data):
         setattr(campus, key, value)
     campus.full_clean()
     campus.save()
-    return campus
-
-
-@transaction.atomic
-def deactivate_campus(*, campus):
-    campus.is_active = False
-    campus.save(update_fields=["is_active", "updated_at"])
     return campus
 
 
@@ -97,13 +87,6 @@ def assign_chauffeur(*, bus, chauffeur):
 
 
 assign_driver = assign_chauffeur
-
-
-@transaction.atomic
-def assign_trajet(*, bus, trajet):
-    bus.trajet = trajet
-    bus.save(update_fields=["trajet", "updated_at"])
-    return bus
 
 
 @transaction.atomic
@@ -200,10 +183,3 @@ def resolve_incident(*, incident, by=None):
     if locked.status != IncidentStatus.RESOLU:
         locked.resolve(by=by)
     return locked
-
-
-def estimate_eta(*, bus, point):
-    if bus.position_lat is None or bus.position_lng is None:
-        return None
-    seconds = haversine_m((bus.position_lat, bus.position_lng), point) / (conf.AVG_BUS_SPEED_KMH * 1000 / 3600)
-    return timezone.now() + timedelta(seconds=seconds)

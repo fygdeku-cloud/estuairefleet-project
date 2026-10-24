@@ -155,32 +155,6 @@ def close_signal(*, signal, by, bus=None):
 
 
 @transaction.atomic
-def close_signals_for_trajet(*, trajet, by, bus=None):
-    signals = list(Signal.objects.select_for_update().filter(trajet=trajet, status=SignalStatus.ACTIF))
-    for signal in signals:
-        close_signal(signal=signal, by=by, bus=bus)
-    return len(signals)
-
-
-@transaction.atomic
-def expire_signal(signal):
-    locked = Signal.objects.select_for_update().get(pk=signal.pk)
-    if locked.status == SignalStatus.ACTIF and locked.expires_at <= timezone.now():
-        locked.status = SignalStatus.EXPIRE
-        locked.save(update_fields=["status", "updated_at"])
-        locked = Signal.objects.select_related("student__user").get(pk=locked.pk)
-        create_in_app_notification(
-            recipient=locked.student.user,
-            title="Signal expiré",
-            message="Votre signal a expiré. Vous pouvez en émettre un nouveau si nécessaire.",
-            metadata={"signal_id": str(locked.pk)},
-            event_key=f"signal:{locked.pk}:expired",
-        )
-        _notify(signal_state_changed, locked)
-    return locked
-
-
-@transaction.atomic
 def expire_stale_signals(now=None):
     now = now or timezone.now()
     signals = list(

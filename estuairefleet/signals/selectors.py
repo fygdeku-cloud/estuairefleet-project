@@ -1,4 +1,3 @@
-from django.db.models import Count, Q
 from django.utils import timezone
 
 from estuairefleet.core.geo import distance_point_to_polyline_m, haversine_m
@@ -29,12 +28,6 @@ def get_active_signals_for_trajet(trajet):
     return Signal.objects.filter(
         trajet=trajet, status=SignalStatus.ACTIF, expires_at__gt=timezone.now()
     ).select_related("student__user", "trajet")
-
-
-def get_active_signals_for_route(route_id):
-    """Alias compatible avec un objet trajet ou son identifiant."""
-    trajet = route_id if hasattr(route_id, "pk") else Trajet.objects.get(pk=route_id)
-    return get_active_signals_for_trajet(trajet)
 
 
 def get_visible_signals_for(user, *, since=None):
@@ -80,20 +73,6 @@ def get_visible_signals_for(user, *, since=None):
     return sorted(payload, key=lambda item: (not item["priority"], item["age_seconds"]))
 
 
-def count_active_signals(trajet):
-    return get_active_signals_for_trajet(trajet).count()
-
-
-def get_active_signals_by_trajet():
-    rows = (
-        Signal.objects.filter(status=SignalStatus.ACTIF, expires_at__gt=timezone.now())
-        .values("trajet_id")
-        .order_by()
-        .annotate(count=Count("id"))
-    )
-    return {row["trajet_id"]: row["count"] for row in rows}
-
-
 def resolve_trajet_for_position(student, lat, lng, now=None):
     profile = _student_profile(student)
     point = (float(lat), float(lng))
@@ -111,11 +90,3 @@ def resolve_trajet_for_position(student, lat, lng, now=None):
             candidates.append((not usual, distance, trajet))
     candidates.sort(key=lambda item: (item[0], item[1]))
     return [item[2] for item in candidates]
-
-
-def get_students_with_abuse():
-    from estuairefleet.users.models import Student
-
-    return Student.objects.select_related("user").filter(
-        Q(abuse_warnings__gt=0) | Q(signals_suspended_until__gt=timezone.now())
-    )

@@ -5,7 +5,7 @@ from django.utils import timezone
 
 from estuairefleet.core.geo import haversine_m
 
-from .models import Bus, Campus, Trajet
+from .models import Bus, Trajet
 
 
 def get_active_trajets(now=None):
@@ -15,10 +15,6 @@ def get_active_trajets(now=None):
         for trajet in Trajet.objects.filter(is_active=True).prefetch_related("campuses", "stops", "buses")
         if trajet.is_in_service(now)
     ]
-
-
-def get_trajet_detail(id):
-    return Trajet.objects.prefetch_related("campuses", "stops", "buses__chauffeur__user").get(pk=id)
 
 
 def get_trajets_in_service(now=None):
@@ -51,26 +47,12 @@ def get_bus_for_chauffeur(user):
     return Bus.objects.select_related("trajet", "chauffeur__user").get(chauffeur__user=user)
 
 
-def get_buses_for_trajet(trajet):
-    return Bus.objects.filter(trajet=trajet).select_related("chauffeur__user")
-
-
 def get_fleet_overview_counts():
     return cache.get_or_set(
         "estuairefleet:fleet:counts:v1",
         lambda: {row["status"]: row["count"] for row in Bus.objects.values("status").annotate(count=Count("id"))},
         timeout=15,
     )
-
-
-def get_campuses():
-    return Campus.objects.filter(is_active=True)
-
-
-def get_free_chauffeurs():
-    from estuairefleet.users.models import Chauffeur
-
-    return Chauffeur.objects.select_related("user").filter(user__is_active=True, bus__isnull=True)
 
 
 def get_nearest_available_bus(*, latitude, longitude):

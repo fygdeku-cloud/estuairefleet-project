@@ -1,6 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="192" height="192" viewBox="0 0 192 192" role="img" aria-labelledby="title">
-  <title id="title">EstuaireFleet</title>
-  <rect width="192" height="192" rx="42" fill="#C8102E"/>
-  <path fill="#fff" d="M96 35c-30.4 0-55 16.1-55 36v47c0 6.6 5.4 12 12 12h8v12h14v-12h42v12h14v-12h8c6.6 0 12-5.4 12-12V71c0-19.9-24.6-36-55-36Zm-31 22h62c10.1 3.3 17.2 8.7 20.2 15H44.8c3-6.3 10.1-11.7 20.2-15ZM54 83h84c4.4 0 8 3.6 8 8v13H46V91c0-4.4 3.6-8 8-8Zm9 42a9 9 0 1 1 0-18 9 9 0 0 1 0 18Zm66 0a9 9 0 1 1 0-18 9 9 0 0 1 0 18Z"/>
-  <circle cx="96" cy="71" r="7" fill="#C8102E"/>
-</svg>
