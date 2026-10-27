@@ -1,6 +1,7 @@
 import secrets
 import string
 from datetime import timedelta
+from math import ceil
 
 from django.conf import settings
 from django.contrib.auth.hashers import check_password, make_password
@@ -12,6 +13,16 @@ from django.utils import timezone
 from estuairefleet.core import conf
 
 from .models import Administrateur, Chauffeur, OTPChallenge, OTPPurpose, Personnel, Student, User, UserRole
+from .selectors import get_otp_challenges_since
+
+
+class OTPRateLimitError(Exception):
+    """Indique qu’un nouvel OTP ne peut pas encore être envoyé."""
+
+    def __init__(self, *, retry_after, reason):
+        self.retry_after = max(1, int(retry_after))
+        self.reason = reason
+        super().__init__(reason)
 
 
 def _temporary_password(length=12):
@@ -198,21 +209,52 @@ def register_student(*, email, matricule, first_name, last_name, password):
 
 @transaction.atomic
 def issue_otp(*, email, purpose, user=None):
-    """Invalidate les anciens codes et envoie un nouveau code à six chiffres."""
+    """Invalide les anciens codes et envoie un nouveau code à six chiffres."""
     email = email.strip().lower()
+    purpose = OTPPurpose(purpose)
     now = timezone.now()
-    OTPChallenge.objects.filter(email__iexact=email, purpose=purpose, consumed_at__isnull=True).update(consumed_at=now)
+
+    window_start = now - timedelta(minutes=settings.ESTUAIREFLEET_OTP_RATE_LIMIT_WINDOW_MINUTES)
+    recent_challenges = list(
+        get_otp_challenges_since(email=email, purpose=purpose.value, since=window_start)
+        .select_for_update()
+        .order_by("created_at")
+    )
+    if recent_challenges:
+        latest = recent_challenges[-1]
+        cooldown_ends_at = latest.created_at + timedelta(
+            seconds=settings.ESTUAIREFLEET_OTP_RESEND_COOLDOWN_SECONDS
+        )
+        if cooldown_ends_at > now:
+            raise OTPRateLimitError(
+                retry_after=ceil((cooldown_ends_at - now).total_seconds()),
+                reason="cooldown",
+            )
+        if len(recent_challenges) >= settings.ESTUAIREFLEET_OTP_MAX_SENDS_PER_WINDOW:
+            window_ends_at = recent_challenges[0].created_at + timedelta(
+                minutes=settings.ESTUAIREFLEET_OTP_RATE_LIMIT_WINDOW_MINUTES
+            )
+            raise OTPRateLimitError(
+                retry_after=ceil((window_ends_at - now).total_seconds()),
+                reason="window",
+            )
+
+    OTPChallenge.objects.filter(
+        email__iexact=email,
+        purpose=purpose.value,
+        consumed_at__isnull=True,
+    ).update(consumed_at=now)
     code = f"{secrets.randbelow(1_000_000):06d}"
     challenge = OTPChallenge.objects.create(
         email=email,
-        purpose=purpose,
+        purpose=purpose.value,
         code_hash=make_password(code),
         expires_at=now + timedelta(minutes=settings.ESTUAIREFLEET_OTP_EXPIRY_MINUTES),
     )
     send_otp_email(
         email=email,
         code=code,
-        purpose=purpose,
+        purpose=purpose.value,
     )
     return challenge
 

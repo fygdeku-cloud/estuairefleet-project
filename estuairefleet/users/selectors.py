@@ -1,10 +1,33 @@
+from datetime import datetime
+
 from django.db.models import Count, Q
 
-from .models import Chauffeur, User, UserRole
+from .models import Chauffeur, OTPChallenge, User, UserRole
 
 
 def get_user_by_identifier(identifier):
+    identifier = (identifier or "").strip()
+    if not identifier:
+        return None
     return User.objects.filter(Q(email__iexact=identifier) | Q(matricule__iexact=identifier)).first()
+
+
+def get_active_user_by_identifier(identifier):
+    identifier = (identifier or "").strip()
+    if not identifier:
+        return None
+    return User.objects.filter(
+        Q(email__iexact=identifier) | Q(matricule__iexact=identifier),
+        is_active=True,
+    ).first()
+
+
+def get_otp_challenges_since(*, email, purpose, since: datetime):
+    return OTPChallenge.objects.filter(
+        email__iexact=email.strip().lower(),
+        purpose=purpose,
+        created_at__gte=since,
+    )
 
 
 def get_users_for_admin(*, search="", role=None, active=None, ordering="-created_at"):

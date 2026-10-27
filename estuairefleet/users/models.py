@@ -22,6 +22,7 @@ class UserRole(models.TextChoices):
 class OTPPurpose(models.TextChoices):
     LOGIN = "login", _("Connexion")
     SIGNUP = "signup", _("Inscription")
+    PASSWORD_RESET = "password_reset", _("Réinitialisation du mot de passe")
 
 
 phone_validator = RegexValidator(r"^\+?[0-9 ()-]{7,32}$", _("Saisissez un numéro de téléphone valide."))
