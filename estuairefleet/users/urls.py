@@ -8,6 +8,7 @@ from .views import (
     password_reset_complete_view,
     password_reset_confirm_view,
     password_reset_done_view,
+    password_reset_otp_view,
     password_reset_view,
     signup_view,
     user_detail_view,
@@ -26,7 +27,8 @@ urlpatterns = [
     path("password/change/", password_change_view, name="password_change"),
     path("password/reset/", password_reset_view, name="password_reset"),
     path("password/reset/done/", password_reset_done_view, name="password_reset_done"),
-    path("password/reset/<uidb64>/<token>/", password_reset_confirm_view, name="password_reset_confirm"),
+    path("password/reset/otp/", password_reset_otp_view, name="password_reset_otp"),
+    path("password/reset/confirm/", password_reset_confirm_view, name="password_reset_confirm"),
     path("password/reset/complete/", password_reset_complete_view, name="password_reset_complete"),
     path("<uuid:pk>/", user_detail_view, name="detail"),
 ]

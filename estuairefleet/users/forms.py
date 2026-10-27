@@ -106,6 +106,56 @@ class OTPVerificationForm(forms.Form):
     )
 
 
+class PasswordResetRequestForm(forms.Form):
+    identifier = forms.CharField(
+        label=_("E-mail ou matricule"),
+        max_length=254,
+        strip=True,
+        widget=forms.TextInput(attrs={"autocomplete": "username"}),
+    )
+
+
+class PasswordResetOTPForm(OTPVerificationForm):
+    code = forms.CharField(
+        label=_("Code de réinitialisation"),
+        min_length=6,
+        max_length=6,
+        strip=True,
+        widget=forms.TextInput(attrs={"inputmode": "numeric", "autocomplete": "one-time-code"}),
+    )
+
+
+class PasswordResetSetPasswordForm(forms.Form):
+    new_password1 = forms.CharField(
+        label=_("Nouveau mot de passe"),
+        widget=forms.PasswordInput(attrs={"autocomplete": "new-password"}),
+        strip=False,
+    )
+    new_password2 = forms.CharField(
+        label=_("Confirmation du mot de passe"),
+        widget=forms.PasswordInput(attrs={"autocomplete": "new-password"}),
+        strip=False,
+    )
+
+    def __init__(self, *args, user=None, **kwargs):
+        self.user = user
+        super().__init__(*args, **kwargs)
+
+    def clean_new_password1(self):
+        password = self.cleaned_data["new_password1"]
+        try:
+            validate_password(password, self.user)
+        except forms.ValidationError as error:
+            raise forms.ValidationError(error.messages) from error
+        return password
+
+    def clean(self):
+        cleaned_data = super().clean()
+        if cleaned_data.get("new_password1") != cleaned_data.get("new_password2"):
+            self.add_error("new_password2", _("Les deux mots de passe doivent être identiques."))
+        return cleaned_data
+
+
 class LocationConsentForm(forms.Form):
     consent_location = forms.BooleanField(
         label=_("J'autorise EstuaireFleet à utiliser ma position pendant la durée de mon signal."),

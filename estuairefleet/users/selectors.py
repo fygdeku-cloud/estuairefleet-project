@@ -22,6 +22,10 @@ def get_active_user_by_identifier(identifier):
     ).first()
 
 
+def get_active_user_by_id(user_id):
+    return User.objects.filter(pk=user_id, is_active=True).first()
+
+
 def get_otp_challenges_since(*, email, purpose, since: datetime):
     return OTPChallenge.objects.filter(
         email__iexact=email.strip().lower(),
