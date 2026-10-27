@@ -34,6 +34,14 @@ def get_otp_challenges_since(*, email, purpose, since: datetime):
     )
 
 
+def get_latest_otp_challenge(*, email, purpose):
+    return (
+        OTPChallenge.objects.filter(email__iexact=email.strip().lower(), purpose=purpose)
+        .order_by("-created_at")
+        .first()
+    )
+
+
 def get_users_for_admin(*, search="", role=None, active=None, ordering="-created_at"):
     queryset = User.objects.all().order_by(ordering)
     if search:

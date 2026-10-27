@@ -28,7 +28,11 @@ from estuairefleet.users.forms import (
 )
 from estuairefleet.users.models import OTPPurpose, User
 from estuairefleet.users.permissions import OTPRequiredMixin
-from estuairefleet.users.selectors import get_active_user_by_id, get_active_user_by_identifier
+from estuairefleet.users.selectors import (
+    get_active_user_by_id,
+    get_active_user_by_identifier,
+    get_latest_otp_challenge,
+)
 from estuairefleet.users.services import OTPRateLimitError, change_password, issue_otp, register_public_user, verify_otp
 
 PENDING_OTP_SESSION_KEY = "pending_otp"
@@ -178,7 +182,9 @@ class OTPVerifyView(FormView):
             user = User.objects.filter(pk=self.request.session.get("login_user_id"), is_active=True).first()
             return issue_otp(email=user.email, purpose=OTPPurpose.LOGIN, user=user) if user and user.email else None
         signup = self.request.session.get(PENDING_SIGNUP_SESSION_KEY)
-        return issue_otp(email=signup["email"], purpose=OTPPurpose.SIGNUP) if signup else None
+        if pending.get("purpose") != OTPPurpose.SIGNUP or not signup or not signup.get("email"):
+            return None
+        return issue_otp(email=signup["email"], purpose=OTPPurpose.SIGNUP)
 
     def form_valid(self, form):
         pending = self.request.session.get(PENDING_OTP_SESSION_KEY, {})
@@ -236,7 +242,9 @@ class PasswordResetRequestView(FormView):
             try:
                 challenge = issue_otp(email=user.email, purpose=OTPPurpose.PASSWORD_RESET, user=user)
             except OTPRateLimitError:
-                challenge = None
+                challenge = get_latest_otp_challenge(email=user.email, purpose=OTPPurpose.PASSWORD_RESET.value)
+                if challenge and not challenge.is_usable:
+                    challenge = None
             if challenge:
                 self.request.session[PENDING_PASSWORD_RESET_SESSION_KEY] = {
                     "user_id": str(user.pk),

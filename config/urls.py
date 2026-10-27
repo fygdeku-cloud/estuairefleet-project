@@ -22,6 +22,7 @@ urlpatterns = [
     # Les parcours publics passent tous par l'OTP et les profils métiers.
     path("accounts/signup/", RedirectView.as_view(pattern_name="users:signup", permanent=False)),
     path("accounts/login/", RedirectView.as_view(pattern_name="users:login", permanent=False)),
+    path("accounts/password/reset/", RedirectView.as_view(pattern_name="users:password_reset", permanent=False)),
     path("accounts/", include("allauth.urls")),
     path("api/", include("config.api_router")),
     path("api/auth-token/", obtain_auth_token, name="obtain_auth_token"),
