@@ -25,6 +25,14 @@ class OTPRateLimitError(Exception):
         super().__init__(reason)
 
 
+def _otp_purpose_value(purpose):
+    """Retourne l'usage canonique d'un OTP sans faire remonter une valeur invalide."""
+    try:
+        return OTPPurpose(purpose).value
+    except (TypeError, ValueError):
+        return None
+
+
 def _temporary_password(length=12):
     return "".join(secrets.choice(string.ascii_letters + string.digits) for _ in range(length))
 
@@ -277,11 +285,14 @@ def send_otp_email(*, email, code, purpose):
 
 
 @transaction.atomic
-def verify_otp(*, challenge_id, code):
+def verify_otp(*, challenge_id, code, purpose=None):
     """Vérifie un code sans révéler si le challenge existe ou est expiré."""
     try:
         challenge = OTPChallenge.objects.select_for_update().get(pk=challenge_id)
     except OTPChallenge.DoesNotExist:
+        return None
+    expected_purpose = _otp_purpose_value(purpose) if purpose is not None else None
+    if purpose is not None and (expected_purpose is None or challenge.purpose != expected_purpose):
         return None
     if not challenge.is_usable or challenge.attempts >= settings.ESTUAIREFLEET_OTP_MAX_ATTEMPTS:
         return None

@@ -194,7 +194,11 @@ class OTPVerifyView(FormView):
 
     def form_valid(self, form):
         pending = self.request.session.get(PENDING_OTP_SESSION_KEY, {})
-        challenge = verify_otp(challenge_id=pending.get("challenge_id"), code=form.cleaned_data["code"])
+        challenge = verify_otp(
+            challenge_id=pending.get("challenge_id"),
+            code=form.cleaned_data["code"],
+            purpose=pending.get("purpose"),
+        )
         if challenge is None:
             form.add_error("code", "Code invalide, expiré ou trop de tentatives.")
             return self.form_invalid(form)
@@ -305,8 +309,12 @@ class PasswordResetOTPView(FormView):
 
     def form_valid(self, form):
         pending = self.request.session.get(PENDING_PASSWORD_RESET_SESSION_KEY, {})
-        challenge = verify_otp(challenge_id=pending.get("challenge_id"), code=form.cleaned_data["code"])
-        if challenge is None or challenge.purpose != OTPPurpose.PASSWORD_RESET:
+        challenge = verify_otp(
+            challenge_id=pending.get("challenge_id"),
+            code=form.cleaned_data["code"],
+            purpose=OTPPurpose.PASSWORD_RESET,
+        )
+        if challenge is None:
             form.add_error("code", "Code invalide, expiré ou trop de tentatives.")
             return self.form_invalid(form)
         pending["verified_at"] = int(timezone.now().timestamp())

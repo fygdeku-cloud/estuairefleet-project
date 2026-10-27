@@ -88,6 +88,20 @@ class PasswordResetFlowTests(TestCase):
         self.assertIsNotNone(verify_otp(challenge_id=challenge.pk, code=code))
         self.assertIsNone(verify_otp(challenge_id=challenge.pk, code=code))
 
+    def test_otp_usage_is_bound_to_the_requested_flow(self):
+        challenge, code = self._request_reset()
+
+        self.assertIsNone(verify_otp(challenge_id=challenge.pk, code=code, purpose=OTPPurpose.LOGIN))
+        challenge.refresh_from_db()
+        self.assertIsNone(challenge.consumed_at)
+
+    def test_invalid_otp_purpose_is_rejected_without_consuming_code(self):
+        challenge, code = self._request_reset()
+
+        self.assertIsNone(verify_otp(challenge_id=challenge.pk, code=code, purpose="unknown"))
+        challenge.refresh_from_db()
+        self.assertIsNone(challenge.consumed_at)
+
     @override_settings(ESTUAIREFLEET_OTP_RESEND_COOLDOWN_SECONDS=60)
     def test_resend_is_rate_limited_during_cooldown(self):
         self._request_reset()

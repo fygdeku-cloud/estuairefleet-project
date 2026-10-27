@@ -78,6 +78,42 @@ class StudentSignupTests(TestCase):
         self.assertRedirects(response, reverse("core:home"), fetch_redirect_response=False)
         self.assertEqual(str(self.client.session["_auth_user_id"]), str(user.pk))
 
+    @override_settings(ESTUAIREFLEET_OTP_RESEND_COOLDOWN_SECONDS=0)
+    def test_login_otp_can_be_resent(self):
+        user = User.objects.create_user(
+            email="resend-login@example.test",
+            password="UneBonnePhraseDePasse!2026",
+            role=UserRole.STUDENT,
+            must_change_password=False,
+        )
+        self.client.post(
+            reverse("users:login"), {"username": user.email, "password": "UneBonnePhraseDePasse!2026"}
+        )
+        mail.outbox.clear()
+
+        response = self.client.post(reverse("users:otp_verify"), {"resend": "1"})
+
+        self.assertRedirects(response, reverse("users:otp_verify"), fetch_redirect_response=False)
+        self.assertEqual(len(mail.outbox), 1)
+
+    @override_settings(ESTUAIREFLEET_OTP_RESEND_COOLDOWN_SECONDS=60)
+    def test_login_otp_resend_is_rate_limited(self):
+        user = User.objects.create_user(
+            email="rate-limited-login@example.test",
+            password="UneBonnePhraseDePasse!2026",
+            role=UserRole.STUDENT,
+            must_change_password=False,
+        )
+        self.client.post(
+            reverse("users:login"), {"username": user.email, "password": "UneBonnePhraseDePasse!2026"}
+        )
+        mail.outbox.clear()
+
+        response = self.client.post(reverse("users:otp_verify"), {"resend": "1"}, follow=True)
+
+        self.assertContains(response, "Veuillez patienter encore")
+        self.assertEqual(mail.outbox, [])
+
     @override_settings(
         EMAIL_BACKEND="django.core.mail.backends.smtp.EmailBackend",
         EMAIL_HOST="mailpit",
