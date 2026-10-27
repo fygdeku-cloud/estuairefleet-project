@@ -7,6 +7,6 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 RUN pip install --no-cache-dir uv
 WORKDIR /app
 COPY pyproject.toml uv.lock ./
-RUN uv pip install --system . django-debug-toolbar django-extensions
+RUN uv pip install --system . django-debug-toolbar django-extensions pytest pytest-django ruff
 COPY . .
 CMD ["python", "manage.py", "runserver", "0.0.0.0:8001"]

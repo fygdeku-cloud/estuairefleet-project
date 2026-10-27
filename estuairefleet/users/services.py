@@ -17,7 +17,7 @@ from .selectors import get_otp_challenges_since
 
 
 class OTPRateLimitError(Exception):
-    """Indique qu’un nouvel OTP ne peut pas encore être envoyé."""
+    """Indique qu'un nouvel OTP ne peut pas encore être envoyé."""
 
     def __init__(self, *, retry_after, reason):
         self.retry_after = max(1, int(retry_after))
@@ -222,9 +222,7 @@ def issue_otp(*, email, purpose, user=None):
     )
     if recent_challenges:
         latest = recent_challenges[-1]
-        cooldown_ends_at = latest.created_at + timedelta(
-            seconds=settings.ESTUAIREFLEET_OTP_RESEND_COOLDOWN_SECONDS
-        )
+        cooldown_ends_at = latest.created_at + timedelta(seconds=settings.ESTUAIREFLEET_OTP_RESEND_COOLDOWN_SECONDS)
         if cooldown_ends_at > now:
             raise OTPRateLimitError(
                 retry_after=ceil((cooldown_ends_at - now).total_seconds()),

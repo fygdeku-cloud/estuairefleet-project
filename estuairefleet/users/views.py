@@ -33,7 +33,13 @@ from estuairefleet.users.selectors import (
     get_active_user_by_identifier,
     get_latest_otp_challenge,
 )
-from estuairefleet.users.services import OTPRateLimitError, change_password, issue_otp, register_public_user, verify_otp
+from estuairefleet.users.services import (
+    OTPRateLimitError,
+    change_password,
+    issue_otp,
+    register_public_user,
+    verify_otp,
+)
 
 PENDING_OTP_SESSION_KEY = "pending_otp"
 PENDING_SIGNUP_SESSION_KEY = "pending_signup"
