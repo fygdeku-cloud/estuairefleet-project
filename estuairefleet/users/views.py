@@ -253,7 +253,7 @@ class PasswordResetRequestView(FormView):
 
 class PasswordResetOTPView(FormView):
     form_class = PasswordResetOTPForm
-    template_name = "account/otp_verify.html"
+    template_name = "users/password_reset_otp.html"
 
     def dispatch(self, request, *args, **kwargs):
         pending = request.session.get(PENDING_PASSWORD_RESET_SESSION_KEY)
