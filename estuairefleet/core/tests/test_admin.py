@@ -1,6 +1,7 @@
 import pytest
 from django.core.cache import cache
 from django.urls import reverse
+from django.utils import timezone
 
 
 def _login_with_otp(client, user):
@@ -26,6 +27,10 @@ def test_admin_can_access_dashboard_and_students_are_forbidden(client, admin_use
 @pytest.mark.django_db
 def test_admin_live_supervision_returns_operational_snapshot(client, admin_user, bus):
     cache.clear()
+    bus.position_lat = "3.8700"
+    bus.position_lng = "11.5200"
+    bus.position_updated_at = timezone.now()
+    bus.save(update_fields=["position_lat", "position_lng", "position_updated_at", "updated_at"])
     _login_with_otp(client, admin_user)
 
     response = client.get(reverse("core:dashboard_live"))
@@ -34,6 +39,9 @@ def test_admin_live_supervision_returns_operational_snapshot(client, admin_user,
     assert response.status_code == 200
     assert {"generated_at", "statistics", "buses", "alerts", "incidents", "routes"} <= payload.keys()
     assert payload["statistics"]["buses_in_service"] == 1
+    assert payload["buses"][0]["plate_number"] == bus.plate_number
+    assert payload["buses"][0]["position_lat"] == 3.87
+    assert payload["buses"][0]["position_lng"] == 11.52
 
 
 @pytest.mark.django_db

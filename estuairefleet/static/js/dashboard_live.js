@@ -5,9 +5,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const mapElement = dashboard.querySelector("[data-supervision-map]");
   const markers = new Map();
   const map = mapElement && window.L ? L.map(mapElement).setView([3.8667, 11.5167], 12) : null;
-  if (map) {
-    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", { attribution: "© OpenStreetMap contributors", maxZoom: 19 }).addTo(map);
-  }
+  if (map) L.tileLayer?.("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", { attribution: "© OpenStreetMap contributors", maxZoom: 19 })?.addTo(map);
   let timer;
   let controller;
   let stopped = false;
@@ -65,6 +63,13 @@ document.addEventListener("DOMContentLoaded", () => {
     });
     markers.forEach((marker, id) => { if (!activeIds.has(id)) { marker.remove(); markers.delete(id); } });
   };
+  const renderUnavailable = () => {
+    renderList("[data-live-alerts]", [], "Données momentanément indisponibles.", () => null);
+    renderList("[data-live-incidents]", [], "Données momentanément indisponibles.", () => null);
+    renderList("[data-live-routes]", [], "Données momentanément indisponibles.", () => null);
+    const stamp = dashboard.querySelector("[data-live-updated]");
+    if (stamp) stamp.textContent = "Actualisation indisponible";
+  };
   const poll = async () => {
     if (stopped || document.hidden) return;
     controller?.abort();
@@ -77,6 +82,7 @@ document.addEventListener("DOMContentLoaded", () => {
       if (error.name === "AbortError") return;
       const status = dashboard.querySelector("[data-live-error]");
       if (status) status.hidden = false;
+      renderUnavailable();
     } finally {
       controller = undefined;
       if (!stopped && !document.hidden) timer = window.setTimeout(poll, 10000);

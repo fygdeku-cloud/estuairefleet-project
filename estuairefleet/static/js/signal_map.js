@@ -3,10 +3,10 @@ document.addEventListener("DOMContentLoaded", () => {
   if (!element || !window.L) return;
 
   const map = L.map(element).setView([3.8667, 11.5167], 12);
-  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+  L.tileLayer?.("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
     attribution: "© OpenStreetMap contributors",
     maxZoom: 19,
-  }).addTo(map);
+  })?.addTo(map);
   const markers = new Map();
   let retryDelay = 1000;
   const pollDelay = navigator.connection?.saveData ? 10000 : 5000;

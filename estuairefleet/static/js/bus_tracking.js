@@ -12,7 +12,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   if (mapElement && window.L) {
     const map = L.map(mapElement).setView([3.8667, 11.5167], 12);
-    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", { attribution: "© OpenStreetMap contributors", maxZoom: 19 }).addTo(map);
+    L.tileLayer?.("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", { attribution: "© OpenStreetMap contributors", maxZoom: 19 })?.addTo(map);
     const markers = new Map();
     const schedulePoll = (delay) => {
       window.clearTimeout(pollTimer);

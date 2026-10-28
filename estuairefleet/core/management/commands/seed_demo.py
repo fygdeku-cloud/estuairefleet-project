@@ -82,6 +82,8 @@ class Command(BaseCommand):
                     emit_signal(student=profile, trajet=routes[index % len(routes)], lat=point[0], lng=point[1])
         statuses = [BusStatus.EN_ROUTE, BusStatus.DISPONIBLE, BusStatus.INDISPONIBLE]
         for index, driver in enumerate(drivers):
+            route = routes[index]
+            initial_position = route.itinerary[0]
             Bus.objects.update_or_create(
                 plate_number=f"CE-{2026 + index}-EF",
                 defaults={
@@ -89,7 +91,10 @@ class Command(BaseCommand):
                     "capacity": 30,
                     "status": statuses[index],
                     "chauffeur": driver,
-                    "trajet": routes[index],
+                    "trajet": route,
+                    "position_lat": initial_position[0],
+                    "position_lng": initial_position[1],
+                    "position_updated_at": timezone.now(),
                 },
             )
         self.stdout.write(self.style.SUCCESS(f"Jeu de démonstration créé. Mot de passe : {DEMO_PASSWORD}"))
