@@ -13,6 +13,11 @@ from ..selectors import get_student_signal_history, get_visible_signals_for
 class StudentSignalHomeView(StudentRequiredMixin, TemplateView):
     template_name = "signals/home.html"
 
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["has_location_consent"] = self.request.user.student.has_location_consent
+        return context
+
 
 class StudentSignalHistoryView(StudentRequiredMixin, TemplateView):
     template_name = "signals/history.html"

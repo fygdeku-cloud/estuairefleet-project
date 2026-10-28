@@ -1,10 +1,11 @@
 from datetime import timedelta
 
 import pytest
+from django.urls import reverse
 from django.utils import timezone
 
 from estuairefleet.core.exceptions import ActiveSignalExists, ConsentRequired, OutOfZone
-from estuairefleet.signals.models import SignalStatus
+from estuairefleet.signals.models import Signal, SignalStatus
 from estuairefleet.signals.services import (
     cancel_signal,
     close_signal,
@@ -80,3 +81,46 @@ def test_driver_closes_signal_when_bus_takes_student(signal, driver, bus):
     assert closed.status == SignalStatus.PRIS_EN_CHARGE
     assert closed.taken_by_bus == bus
     assert closed.taken_at is not None
+
+
+@pytest.mark.django_db
+def test_signal_api_creates_signal_and_exposes_it_to_driver_and_admin(client, student, trajet, driver, bus, admin_user):
+    client.force_login(student.user)
+
+    response = client.post(
+        "/api/signals/",
+        data={"lat": "3.8667", "lng": "11.5167", "accuracy": 8},
+        content_type="application/json",
+    )
+
+    assert response.status_code == 201
+    signal = Signal.objects.get(pk=response.json()["id"])
+    assert signal.status == SignalStatus.ACTIF
+    assert signal.student == student
+    assert signal.trajet == trajet
+
+    for user in (driver.user, admin_user):
+        client.force_login(user)
+        visible = client.get("/api/signals/visible/")
+        assert visible.status_code == 200
+        assert str(signal.pk) in {str(item["id"]) for item in visible.json()["signals"]}
+
+
+@pytest.mark.django_db
+def test_signal_page_exposes_missing_consent_and_consent_endpoint(client, student):
+    student.consent_location = False
+    student.location_consent_at = None
+    student.save(update_fields=["consent_location", "location_consent_at", "updated_at"])
+    client.force_login(student.user)
+    session = client.session
+    session["otp_verified_at"] = 9_999_999_999
+    session.save()
+
+    page = client.get(reverse("signals:home"))
+    assert page.status_code == 200
+    assert 'data-location-consent="false"' in page.content.decode()
+
+    consent = client.post("/api/users/consent/")
+    assert consent.status_code == 200
+    student.refresh_from_db()
+    assert student.has_location_consent

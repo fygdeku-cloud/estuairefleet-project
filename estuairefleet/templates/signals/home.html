@@ -13,7 +13,7 @@
         <div class="mt-8 flex flex-wrap gap-3"><a class="inline-flex items-center gap-2 rounded-xl border border-white/15 bg-white/10 px-4 py-3 text-sm font-bold text-white transition hover:bg-white/15" href="{% url 'signals:history' %}">Voir mon historique <span aria-hidden="true">→</span></a><span class="inline-flex items-center gap-2 px-2 py-3 text-sm text-slate-400"><svg class="h-4 w-4 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m5 12 4 4L19 6" /></svg> Localisation protégée</span></div>
       </div>
       <div class="flex flex-col items-center justify-center">
-        <button id="signal-emit" type="button" aria-label="Je suis là, j'ai besoin du bus" class="ef-pulse-ring group relative grid h-52 w-52 place-items-center rounded-full border-[14px] border-insam-300/20 bg-insam-600 text-center text-white shadow-[0_20px_70px_rgba(200,16,46,.45)] transition duration-300 hover:scale-105 hover:bg-insam-500 focus:outline-none focus:ring-4 focus:ring-white/60 sm:h-60 sm:w-60" data-signal-action>
+        <button id="signal-emit" type="button" aria-label="Je suis là, j'ai besoin du bus" class="ef-pulse-ring group relative grid h-52 w-52 place-items-center rounded-full border-[14px] border-insam-300/20 bg-insam-600 text-center text-white shadow-[0_20px_70px_rgba(200,16,46,.45)] transition duration-300 hover:scale-105 hover:bg-insam-500 focus:outline-none focus:ring-4 focus:ring-white/60 sm:h-60 sm:w-60" data-signal-action data-location-consent="{{ has_location_consent|yesno:'true,false' }}">
           <span class="absolute inset-5 rounded-full border border-white/20"></span><span class="relative"><svg class="mx-auto mb-3 h-9 w-9 transition group-hover:-translate-y-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18Zm0-5a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z" /></svg><span class="block text-lg font-bold">Je suis là</span><span class="mt-1 block text-xs font-medium text-insam-100">Appuyer pour signaler</span></span>
         </button>
         <p id="signal-status" class="mt-6 max-w-xs text-center text-sm leading-6 text-slate-300" aria-live="polite">Votre position n’est transmise qu’après votre action.</p><span class="mt-2 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-[11px] font-semibold text-slate-400"><span class="ef-status-dot ef-status-dot-red"></span> Un seul signal actif par étudiant</span>
@@ -25,24 +25,87 @@
     <article class="rounded-2xl border border-slate-200 bg-white p-5 shadow-soft"><span class="mb-4 grid h-10 w-10 place-items-center rounded-xl bg-emerald-50 text-emerald-600"><svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6l4 2m6-2a10 10 0 1 1-20 0 10 10 0 0 1 20 0Z" /></svg></span><h2 class="font-bold text-slate-950">Un signal temporaire</h2><p class="mt-1 text-sm leading-6 text-slate-500">Votre demande expire automatiquement après sa prise en charge.</p></article>
     <article class="rounded-2xl border border-slate-200 bg-white p-5 shadow-soft"><span class="mb-4 grid h-10 w-10 place-items-center rounded-xl bg-amber-50 text-amber-600"><svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12.75 11.25 15 15 9.75m6.75 2.25a9.75 9.75 0 1 1-19.5 0 9.75 9.75 0 0 1 19.5 0Z" /></svg></span><h2 class="font-bold text-slate-950">Une prise en charge claire</h2><p class="mt-1 text-sm leading-6 text-slate-500">Le chauffeur reçoit une alerte lorsque le trajet se remplit.</p></article>
   </section>
+  <div id="location-consent-modal" tabindex="-1" aria-hidden="true" class="fixed inset-0 z-50 hidden items-center justify-center overflow-y-auto overflow-x-hidden bg-slate-950/60 p-4 backdrop-blur-sm" data-consent-modal>
+    <div class="relative w-full max-w-md rounded-3xl bg-white p-6 shadow-2xl sm:p-8" role="dialog" aria-modal="true" aria-labelledby="location-consent-title">
+      <div class="flex items-start justify-between gap-4"><div><p class="text-xs font-black uppercase tracking-[.16em] text-insam-600">Votre confidentialité</p><h2 id="location-consent-title" class="mt-2 text-2xl font-bold tracking-tight text-slate-950">Autoriser votre position</h2></div><button type="button" class="rounded-xl p-2 text-xl font-bold text-slate-400 hover:bg-slate-100 hover:text-slate-700" data-consent-cancel aria-label="Fermer">×</button></div>
+      <p class="mt-4 text-sm leading-6 text-slate-600">Pour prévenir le chauffeur, EstuaireFleet utilise votre position uniquement pendant la durée de ce signal. Elle ne sera jamais affichée aux autres étudiants.</p>
+      <div class="mt-5 rounded-2xl border border-insam-100 bg-insam-50 p-4 text-sm font-semibold text-insam-900"><span class="mr-2 text-insam-600">●</span> Votre position sera contrôlée dans la zone du trajet avant l'enregistrement.</div>
+      <div class="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end"><button type="button" class="inline-flex min-h-11 items-center justify-center rounded-xl border border-slate-200 px-4 py-3 text-sm font-bold text-slate-600 hover:bg-slate-50" data-consent-cancel>Pas maintenant</button><button type="button" class="inline-flex min-h-11 items-center justify-center rounded-xl bg-insam-600 px-4 py-3 text-sm font-bold text-white shadow-lg shadow-insam-600/20 hover:bg-insam-700" data-consent-confirm>J'autorise et je continue</button></div>
+    </div>
+  </div>
 {% endblock %}
 {% block extra_js %}<script>
-document.getElementById("signal-emit")?.addEventListener("click", function () {
-  const button = this;
+document.addEventListener("DOMContentLoaded", () => {
+  const button = document.getElementById("signal-emit");
+  if (!button) return;
   const status = document.getElementById("signal-status");
-  const csrf = document.querySelector("input[name='csrfmiddlewaretoken']")?.value;
-  button.setAttribute("aria-busy", "true");
-  status.textContent = "Localisation en cours…";
-  if (!navigator.geolocation) { status.textContent = "La géolocalisation est indisponible sur cet appareil."; button.removeAttribute("aria-busy"); return; }
-  navigator.geolocation.getCurrentPosition(async (position) => {
+  const csrf = document.querySelector("input[name='csrfmiddlewaretoken']")?.value || "";
+  const modal = document.querySelector("[data-consent-modal]");
+  const consentConfirm = modal?.querySelector("[data-consent-confirm]");
+  const consentCancelButtons = modal?.querySelectorAll("[data-consent-cancel]") || [];
+  let hasConsent = button.dataset.locationConsent === "true";
+  let isBusy = false;
+  const setStatus = (message) => { if (status) status.textContent = message; };
+  const setModalVisible = (visible) => {
+    if (!modal) return;
+    modal.classList.toggle("hidden", !visible);
+    modal.classList.toggle("flex", visible);
+    modal.setAttribute("aria-hidden", String(!visible));
+    if (visible) consentConfirm?.focus();
+  };
+  const setBusy = (busy) => {
+    isBusy = busy;
+    button.setAttribute("aria-busy", String(busy));
+    button.disabled = busy;
+    if (consentConfirm) consentConfirm.disabled = busy;
+  };
+  const recordConsent = async () => {
+    const response = await fetch("/api/users/consent/", { method: "POST", credentials: "same-origin", headers: { "X-CSRFToken": csrf } });
+    const payload = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(payload.detail || "Le consentement n'a pas pu être enregistré.");
+    hasConsent = true;
+  };
+  const emitSignal = () => {
+    if (isBusy) return;
+    setBusy(true);
+    setStatus("Localisation en cours…");
+    if (!navigator.geolocation) {
+      setStatus("La géolocalisation est indisponible sur cet appareil.");
+      setBusy(false);
+      return;
+    }
+    navigator.geolocation.getCurrentPosition(async (position) => {
+      try {
+        const response = await fetch("/api/signals/", { method: "POST", credentials: "same-origin", headers: { "Content-Type": "application/json", "X-CSRFToken": csrf }, body: JSON.stringify({ lat: position.coords.latitude, lng: position.coords.longitude, accuracy: position.coords.accuracy }) });
+        const payload = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(payload.detail || "Impossible d’émettre le signal.");
+        setStatus("Votre signal est actif. Le chauffeur a été informé.");
+        button.disabled = true;
+      } catch (error) {
+        setStatus(error.message || "Connexion instable. Réessayez.");
+        setBusy(false);
+      }
+      button.removeAttribute("aria-busy");
+    }, () => {
+      setStatus("Position refusée. Activez la localisation dans les réglages de votre navigateur.");
+      setBusy(false);
+    }, { enableHighAccuracy: true, timeout: 8000, maximumAge: 10000 });
+  };
+  button.addEventListener("click", () => hasConsent ? emitSignal() : setModalVisible(true));
+  consentCancelButtons.forEach((control) => control.addEventListener("click", () => setModalVisible(false)));
+  consentConfirm?.addEventListener("click", async () => {
+    if (isBusy) return;
+    setBusy(true);
+    setStatus("Enregistrement de votre autorisation…");
     try {
-      const response = await fetch("/api/signals/", { method: "POST", credentials: "same-origin", headers: { "Content-Type": "application/json", "X-CSRFToken": csrf || "" }, body: JSON.stringify({ lat: position.coords.latitude, lng: position.coords.longitude, accuracy: position.coords.accuracy }) });
-      const payload = await response.json();
-      if (!response.ok) throw new Error(payload.detail || "Impossible d’émettre le signal.");
-      status.textContent = "Votre signal est actif. Le chauffeur a été informé.";
-      button.disabled = true;
-    } catch (error) { status.textContent = error.message || "Connexion instable. Réessayez."; }
-    button.removeAttribute("aria-busy");
-  }, () => { status.textContent = "Position refusée. Activez la localisation dans les réglages de votre navigateur."; button.removeAttribute("aria-busy"); }, { enableHighAccuracy: true, timeout: 8000, maximumAge: 10000 });
+      await recordConsent();
+      setModalVisible(false);
+      setBusy(false);
+      emitSignal();
+    } catch (error) {
+      setStatus(error.message || "Le consentement n'a pas pu être enregistré.");
+      setBusy(false);
+    }
+  });
 });
 </script>{% endblock %}
