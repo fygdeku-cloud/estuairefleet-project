@@ -1,4 +1,5 @@
 from datetime import timedelta
+from uuid import uuid4
 
 from django.core.exceptions import PermissionDenied, ValidationError
 from django.db import transaction
@@ -42,6 +43,7 @@ def evaluate_route_alert(*, route) -> Alert | None:
             signal_count=count,
         )
         drivers = [bus.chauffeur.user for bus in locked_route.buses.select_related("chauffeur__user") if bus.chauffeur]
+        driver_read_group_id = uuid4()
         for driver in drivers:
             create_in_app_notification(
                 recipient=driver,
@@ -50,6 +52,7 @@ def evaluate_route_alert(*, route) -> Alert | None:
                 metadata={"alert_id": str(alert.pk), "route_id": str(locked_route.pk)},
                 notification_type="alert",
                 event_key=f"alert:{alert.pk}:driver:{driver.pk}:created",
+                read_group_id=driver_read_group_id,
             )
     else:
         alert.signal_count = count
@@ -244,6 +247,7 @@ def _take_alert_signals(*, alert, by, bus=None):
 def _notify_transport_admins(*, title, message, alert, event_suffix):
     from estuairefleet.users.models import User
 
+    read_group_id = uuid4()
     for user in User.objects.filter(is_active=True, role__in=("admin", "administrator", "staff")):
         create_in_app_notification(
             recipient=user,
@@ -252,4 +256,5 @@ def _notify_transport_admins(*, title, message, alert, event_suffix):
             metadata={"alert_id": str(alert.pk)},
             notification_type="escalation" if "escalad" in title.lower() else "alert",
             event_key=f"alert:{alert.pk}:admin:{user.pk}:{event_suffix}",
+            read_group_id=read_group_id,
         )

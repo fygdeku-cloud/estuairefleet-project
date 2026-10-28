@@ -51,6 +51,9 @@ class Notification(BaseModel):
     provider_reference = models.CharField(_("référence prestataire"), max_length=120, blank=True)
     metadata = models.JSONField(_("métadonnées"), default=dict, blank=True)
     event_key = models.CharField(_("clé d'événement"), max_length=180, null=True, blank=True, editable=False)
+    read_group_id = models.UUIDField(
+        _("groupe de lecture partagé"), null=True, blank=True, editable=False, db_index=True
+    )
 
     class Meta:
         verbose_name = _("notification")

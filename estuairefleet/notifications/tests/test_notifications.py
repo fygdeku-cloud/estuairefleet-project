@@ -1,3 +1,5 @@
+from uuid import uuid4
+
 import pytest
 from django.core import mail
 from django.core.exceptions import PermissionDenied
@@ -42,6 +44,34 @@ def test_only_recipient_can_mark_notification_read(notification, student_user, a
 
     assert read.read
     assert get_unread_notification_count(student_user) == 0
+
+
+@pytest.mark.django_db
+def test_shared_read_group_marks_colleagues_notifications_as_read(user_factory):
+    admin = user_factory(role="admin", email="admin-one@example.test")
+    colleague = user_factory(role="admin", email="admin-two@example.test")
+    read_group_id = uuid4()
+    first = create_in_app_notification(
+        recipient=admin,
+        title="Signal étudiant",
+        message="Un signal attend une prise en charge.",
+        event_key="alert:shared:admin-one",
+        read_group_id=read_group_id,
+    )
+    second = create_in_app_notification(
+        recipient=colleague,
+        title="Signal étudiant",
+        message="Un signal attend une prise en charge.",
+        event_key="alert:shared:admin-two",
+        read_group_id=read_group_id,
+    )
+
+    mark_notification_read(notification=first, user=admin)
+
+    first.refresh_from_db()
+    second.refresh_from_db()
+    assert first.read and second.read
+    assert get_unread_notification_count(colleague) == 0
 
 
 @pytest.mark.django_db

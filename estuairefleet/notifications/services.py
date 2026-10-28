@@ -9,7 +9,7 @@ from .providers import provider_for
 
 @transaction.atomic
 def create_in_app_notification(
-    *, recipient, title, message, metadata=None, notification_type="information", event_key=None
+    *, recipient, title, message, metadata=None, notification_type="information", event_key=None, read_group_id=None
 ) -> Notification:
     defaults = {
         "title": title,
@@ -19,13 +19,17 @@ def create_in_app_notification(
         "channel": "in_app",
         "status": NotificationStatus.SENT,
         "sent_at": timezone.now(),
+        "read_group_id": read_group_id,
     }
     if event_key:
-        notification, _ = Notification.objects.get_or_create(
+        notification, created = Notification.objects.get_or_create(
             recipient=recipient,
             event_key=event_key,
             defaults=defaults,
         )
+        if not created and read_group_id and notification.read_group_id != read_group_id:
+            notification.read_group_id = read_group_id
+            notification.save(update_fields=["read_group_id", "updated_at"])
     else:
         notification = Notification.objects.create(recipient=recipient, **defaults)
     cache.delete(f"estuairefleet:notifications:unread:{recipient.pk}")
@@ -34,7 +38,15 @@ def create_in_app_notification(
 
 @transaction.atomic
 def create_notification(
-    *, recipient, title, message, channel="in_app", notification_type="information", metadata=None, event_key=None
+    *,
+    recipient,
+    title,
+    message,
+    channel="in_app",
+    notification_type="information",
+    metadata=None,
+    event_key=None,
+    read_group_id=None,
 ):
     notification = Notification.objects.create(
         recipient=recipient,
@@ -44,6 +56,7 @@ def create_notification(
         notification_type=notification_type,
         metadata=metadata or {},
         event_key=event_key,
+        read_group_id=read_group_id,
     )
     if channel == "in_app":
         notification.status = NotificationStatus.SENT
@@ -114,7 +127,16 @@ def mark_notification_read(*, notification, user) -> Notification:
     if locked.recipient_id != user.pk:
         raise PermissionDenied("Cette notification ne vous est pas destinée.")
     if locked.read_at is None:
-        locked.read_at = timezone.now()
-        locked.save(update_fields=["read_at", "updated_at"])
-        cache.delete(f"estuairefleet:notifications:unread:{user.pk}")
+        read_at = timezone.now()
+        if locked.read_group_id:
+            grouped = Notification.objects.select_for_update().filter(read_group_id=locked.read_group_id)
+            recipient_ids = set(grouped.values_list("recipient_id", flat=True))
+            grouped.update(read_at=read_at, updated_at=read_at)
+            locked.read_at = read_at
+            for recipient_id in recipient_ids:
+                cache.delete(f"estuairefleet:notifications:unread:{recipient_id}")
+        else:
+            locked.read_at = read_at
+            locked.save(update_fields=["read_at", "updated_at"])
+            cache.delete(f"estuairefleet:notifications:unread:{user.pk}")
     return locked
