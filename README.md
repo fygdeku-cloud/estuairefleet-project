@@ -16,6 +16,17 @@ uv run python manage.py runserver
 
 Ou avec l’environnement complet : `just up`. Les coordonnées du seeder sont des placeholders autour de Yaoundé.
 
+### Démarrage avec Docker Compose
+
+Pour une nouvelle installation Docker locale, créez votre configuration privée puis démarrez les services :
+
+```bash
+cp .env.example .env
+docker compose -f docker-compose.local.yml up -d --build
+```
+
+L’application est disponible sur http://localhost:8001 et Mailpit sur http://localhost:8025. Le service `postgres` stocke ses données dans le volume Docker `local_postgres_data`. Pour un volume déjà initialisé, conservez les mêmes `POSTGRES_DB`, `POSTGRES_USER` et `POSTGRES_PASSWORD` que lors de son initialisation : modifier ces variables ne change pas les identifiants dans les données existantes. Ne supprimez pas ce volume pour résoudre un problème de configuration.
+
 En local, les e-mails OTP sont capturés par Mailpit. Consultez-les sur http://localhost:8025 ; le serveur SMTP utilisé par Django est `mailpit:1025`.
 
 Comptes de démonstration : `admin@insam.local`, `scolarite@insam.local`, `chauffeur1@insam.local` et `INS-2026-001` avec le mot de passe `EstuaireDemo2026!` en mode DEBUG uniquement.

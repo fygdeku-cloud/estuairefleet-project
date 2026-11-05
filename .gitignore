@@ -68,6 +68,7 @@ venv/
 .env
 .env.*
 !.env.example
+!.env.template
 !.env.production.example
 .envs/
 ENV/
