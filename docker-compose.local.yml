@@ -13,9 +13,21 @@ services:
       postgres:
         condition: service_healthy
       redis:
-        condition: service_started
+        condition: service_healthy
       mailpit:
         condition: service_started
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8001/', timeout=3)",
+        ]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 60s
   celeryworker:
     build:
       context: .
@@ -25,8 +37,10 @@ services:
     volumes:
       - .:/app
     depends_on:
-      - django
-      - redis
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
   celerybeat:
     build:
       context: .
@@ -36,7 +50,10 @@ services:
     volumes:
       - .:/app
     depends_on:
-      - redis
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
   postgres:
     image: postgres:16-alpine
     environment:
@@ -52,6 +69,11 @@ services:
       retries: 10
   redis:
     image: redis:7-alpine
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
   mailpit:
     image: axllent/mailpit:latest
     ports:

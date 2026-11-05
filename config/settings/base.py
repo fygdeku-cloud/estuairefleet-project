@@ -13,6 +13,12 @@ if env.bool("DJANGO_READ_DOT_ENV_FILE", default=False):
 
 DEBUG = env.bool("DJANGO_DEBUG", default=False)
 SECRET_KEY = env.str("DJANGO_SECRET_KEY", default="unsafe-development-key")
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "handlers": {"console": {"class": "logging.StreamHandler"}},
+    "root": {"handlers": ["console"], "level": "INFO"},
+}
 TIME_ZONE = "Africa/Douala"
 LANGUAGE_CODE = "fr"
 LANGUAGES = (("fr", "Français"), ("en", "English"))
