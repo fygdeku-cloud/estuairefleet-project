@@ -157,8 +157,18 @@ TEMPLATES = [
     },
 ]
 FORM_RENDERER = "django.forms.renderers.TemplatesSetting"
+SESSION_ENGINE = "django.contrib.sessions.backends.db"
+SESSION_COOKIE_AGE = env.int("DJANGO_SESSION_COOKIE_AGE", default=60 * 60 * 24 * 14)
+SESSION_COOKIE_NAME = env.str("DJANGO_SESSION_COOKIE_NAME", default="estuairefleet_sessionid")
+SESSION_COOKIE_PATH = "/"
 SESSION_COOKIE_HTTPONLY = True
+SESSION_COOKIE_SAMESITE = "Lax"
+SESSION_COOKIE_SECURE = env.bool("DJANGO_SESSION_COOKIE_SECURE", default=not DEBUG)
+SESSION_EXPIRE_AT_BROWSER_CLOSE = False
+SESSION_SAVE_EVERY_REQUEST = True
 CSRF_COOKIE_HTTPONLY = True
+CSRF_COOKIE_SAMESITE = "Lax"
+CSRF_COOKIE_SECURE = env.bool("DJANGO_CSRF_COOKIE_SECURE", default=not DEBUG)
 X_FRAME_OPTIONS = "DENY"
 EMAIL_BACKEND = env.str("DJANGO_EMAIL_BACKEND", default="django.core.mail.backends.smtp.EmailBackend")
 EMAIL_HOST = env.str("EMAIL_HOST", default="localhost")
