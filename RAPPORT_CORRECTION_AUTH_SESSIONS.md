@@ -11,6 +11,7 @@ L’analyse a montré que le symptôme de « session perdue » ne provenait pas 
 - `config/settings/base.py` : configuration explicite du backend de session en base, de la durée et du nom de cookie, de `HttpOnly`, `SameSite`, de la persistance après fermeture et de la sauvegarde par requête. `Secure` suit le mode local ou la configuration de production.
 - `docs/reports/auth-session-analysis.md` : analyse initiale des flux, des causes et des points à valider.
 - `estuairefleet/users/permissions.py` : ajout de `LoginAndOTPRequiredMixin` pour combiner l’authentification Django et le contrôle OTP ; redirection des visiteurs anonymes vers la route de login avec le chemin demandé dans `next`.
+- Audit de suivi : lorsqu’un utilisateur possède toujours une session Django valide mais que son OTP a expiré, un nouveau code OTP est maintenant envoyé et la navigation demandée est conservée dans la session. Il n’est plus renvoyé inutilement au formulaire de mot de passe.
 - `estuairefleet/users/views.py` : emploi du mixin combiné pour les vues privées du compte ; redirection après OTP selon le rôle lorsque `next` n’est pas fourni ; validation de `next` limitée à l’hôte local ; prise en compte du `next` reçu en GET ou en POST.
 - `estuairefleet/fleet/views/main.py` : la vue du réseau de flotte exige maintenant l’authentification et un OTP encore valide.
 - `estuairefleet/users/tests/test_users.py` : cas de test du retour après OTP pour étudiant, chauffeur, administrateur et personnel.
@@ -19,9 +20,9 @@ Le flux d’inscription crée le compte après vérification OTP, ouvre une sess
 
 ## Tests et vérifications
 
-Les tests d’authentification existants couvrent la connexion par matricule, la validation OTP et l’inscription. De nouveaux cas paramétrés vérifient les destinations par rôle après une connexion OTP.
+Les tests d’authentification couvrent la connexion par matricule, la validation OTP, l’inscription, le maintien de la session lors d’une nouvelle vérification OTP, la déconnexion et les destinations par rôle.
 
-La commande `pytest estuairefleet/users/tests/test_users.py estuairefleet/users/tests/test_signup.py` n’a pas pu être lancée, car `pytest` n’est pas disponible globalement. La tentative `uv run pytest ...` a échoué avant le démarrage des tests : le téléchargement de `ruff==0.16.10` a expiré pendant la préparation de l’environnement. Les tests ne sont donc pas déclarés comme passés.
+La commande `pytest estuairefleet/users/tests/test_users.py estuairefleet/users/tests/test_signup.py` n’a pas pu être lancée, car `pytest` n’est pas disponible globalement. Les tentatives avec `uv` ont échoué avant le démarrage des tests : téléchargement de dépendances interrompu par expiration réseau, puis environnement local incomplet sans Django ni pytest. `compileall` et `git diff --check` ont réussi pour les fichiers modifiés lors de l’audit. Les tests ne sont donc pas déclarés comme passés.
 
 ## Vérification manuelle
 
@@ -45,6 +46,6 @@ La commande `pytest estuairefleet/users/tests/test_users.py estuairefleet/users/
 
 ## Points d’attention
 
-- La durée OTP d’une heure reste distincte de la durée de session Django. À expiration OTP, l’utilisateur doit effectuer de nouveau le parcours de vérification avant l’accès aux pages qui l’exigent.
+- La durée OTP d’une heure reste distincte de la durée de session Django. À expiration OTP, l’utilisateur doit saisir un nouveau code reçu par e-mail avant l’accès aux pages qui l’exigent ; sa session Django est conservée.
 - La suite de tests doit être exécutée dans un environnement où les dépendances du projet sont déjà installées ou téléchargeables.
 - Le paramètre `LOGOUT_REDIRECT_URL` n’est pas redéfini globalement ; la vue de déconnexion utilise explicitement `core:home` comme destination par défaut.

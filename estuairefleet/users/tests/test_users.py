@@ -68,6 +68,38 @@ def test_login_otp_redirects_to_role_home(client, user_factory, role, destinatio
 
 
 @pytest.mark.django_db
+def test_expired_otp_reverifies_authenticated_session_and_returns_to_requested_url(client, student):
+    client.force_login(student.user)
+    session = client.session
+    session["otp_verified_at"] = 1
+    session.save()
+
+    response = client.get(reverse("signals:home"))
+
+    assert response.status_code == 302
+    assert response.url == reverse("users:otp_verify")
+    assert str(client.session["_auth_user_id"]) == str(student.user.pk)
+    code = re.search(r"\b(\d{6})\b", mail.outbox[-1].body).group(1)
+    response = client.post(reverse("users:otp_verify"), {"code": code})
+    assert response.url == reverse("signals:home")
+    assert str(client.session["_auth_user_id"]) == str(student.user.pk)
+
+
+@pytest.mark.django_db
+def test_logout_clears_session_and_protected_view_redirects_to_login(client, student):
+    client.force_login(student.user)
+
+    response = client.post(reverse("users:logout"))
+
+    assert response.status_code == 302
+    assert "_auth_user_id" not in client.session
+    response = client.get(reverse("signals:home"))
+    assert response.status_code == 302
+    assert response.url.startswith(f"{reverse('users:login')}?")
+    assert "next=" in response.url
+
+
+@pytest.mark.django_db
 def test_role_helpers_and_profiles_are_consistent(student, driver, admin_user, staff_user):
     assert student.user.role == UserRole.STUDENT
     assert driver.user.role == UserRole.DRIVER

@@ -27,7 +27,7 @@ class StudentSignupTests(TestCase):
         self.assertRedirects(response, reverse("users:otp_verify"), fetch_redirect_response=False)
         code = re.search(r"\b(\d{6})\b", mail.outbox[-1].body).group(1)
         response = self.client.post(reverse("users:otp_verify"), {"code": code})
-        self.assertRedirects(response, reverse("core:home"), fetch_redirect_response=False)
+        self.assertRedirects(response, reverse("signals:home"), fetch_redirect_response=False)
         user = User.objects.get(email="student@example.test")
         self.assertEqual(user.role, UserRole.STUDENT)
         self.assertFalse(user.must_change_password)

@@ -1,10 +1,16 @@
 from django.conf import settings
+from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth.views import redirect_to_login
 from django.core.exceptions import PermissionDenied
+from django.http import HttpResponse
+from django.shortcuts import redirect
 from django.urls import reverse
 from django.utils import timezone
 from rest_framework.permissions import BasePermission
+
+from estuairefleet.users.models import OTPPurpose
+from estuairefleet.users.services import OTPRateLimitError, issue_otp
 
 
 class OTPRequiredMixin:
@@ -22,7 +28,21 @@ class OTPRequiredMixin:
         except (TypeError, ValueError):
             otp_is_fresh = False
         if not otp_is_fresh:
-            return redirect_to_login(request.get_full_path(), login_url=reverse("users:login"))
+            if not request.user.email:
+                return redirect_to_login(request.get_full_path(), login_url=reverse("users:login"))
+            try:
+                challenge = issue_otp(email=request.user.email, purpose=OTPPurpose.LOGIN, user=request.user)
+            except OTPRateLimitError:
+                return HttpResponse("Trop de demandes de code. Réessayez dans quelques minutes.", status=429)
+            request.session["login_user_id"] = str(request.user.pk)
+            request.session["pending_otp"] = {
+                "challenge_id": str(challenge.pk),
+                "purpose": OTPPurpose.LOGIN,
+                "next": request.get_full_path(),
+            }
+            request.session.modified = True
+            messages.info(request, "Votre vérification a expiré. Un nouveau code vous a été envoyé par e-mail.")
+            return redirect("users:otp_verify")
         return super().dispatch(request, *args, **kwargs)
 
 
