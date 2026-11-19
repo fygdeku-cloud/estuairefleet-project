@@ -4,7 +4,6 @@ from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth import login
 from django.contrib.auth.hashers import make_password
-from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth.views import (
     LoginView,
     LogoutView,
@@ -27,7 +26,7 @@ from estuairefleet.users.forms import (
     StudentProfileForm,
 )
 from estuairefleet.users.models import OTPPurpose, User
-from estuairefleet.users.permissions import OTPRequiredMixin
+from estuairefleet.users.permissions import LoginAndOTPRequiredMixin
 from estuairefleet.users.selectors import (
     get_active_user_by_id,
     get_active_user_by_identifier,
@@ -232,7 +231,7 @@ class OTPVerifyView(FormView):
         return redirect("users:login")
 
 
-class ProtectedPasswordChangeView(LoginRequiredMixin, OTPRequiredMixin, PasswordChangeView):
+class ProtectedPasswordChangeView(LoginAndOTPRequiredMixin, PasswordChangeView):
     template_name = "users/password_change.html"
 
 
@@ -361,13 +360,11 @@ class PasswordResetCompleteView(TemplateView):
     template_name = "users/password_reset_complete.html"
 
 
-class UserDetailView(LoginRequiredMixin, OTPRequiredMixin, DetailView):
+class UserDetailView(LoginAndOTPRequiredMixin, DetailView):
     model = User
     template_name = "users/user_detail.html"
 
     def dispatch(self, request, *args, **kwargs):
-        if not request.user.is_authenticated:
-            return redirect("users:login")
         if str(request.user.pk) != str(kwargs.get("pk")) and not request.user.is_superuser:
             from django.core.exceptions import PermissionDenied
 
@@ -375,7 +372,7 @@ class UserDetailView(LoginRequiredMixin, OTPRequiredMixin, DetailView):
         return super().dispatch(request, *args, **kwargs)
 
 
-class UserUpdateView(LoginRequiredMixin, OTPRequiredMixin, SuccessMessageMixin, UpdateView):
+class UserUpdateView(LoginAndOTPRequiredMixin, SuccessMessageMixin, UpdateView):
     model = User
     fields = ("first_name", "last_name", "phone_number")
     template_name = "users/user_form.html"
@@ -411,13 +408,8 @@ class UserUpdateView(LoginRequiredMixin, OTPRequiredMixin, SuccessMessageMixin, 
         return self.request.user.get_absolute_url()
 
 
-class UserRedirectView(RedirectView):
+class UserRedirectView(LoginAndOTPRequiredMixin, RedirectView):
     permanent = False
-
-    def dispatch(self, request, *args, **kwargs):
-        if not request.user.is_authenticated:
-            return redirect("users:login")
-        return super().dispatch(request, *args, **kwargs)
 
     def get_redirect_url(self):
         return reverse("users:detail", kwargs={"pk": self.request.user.pk})

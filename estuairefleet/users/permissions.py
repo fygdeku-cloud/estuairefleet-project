@@ -1,7 +1,8 @@
 from django.conf import settings
+from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth.views import redirect_to_login
 from django.core.exceptions import PermissionDenied
-from django.shortcuts import redirect
+from django.urls import reverse
 from django.utils import timezone
 from rest_framework.permissions import BasePermission
 
@@ -21,10 +22,12 @@ class OTPRequiredMixin:
         except (TypeError, ValueError):
             otp_is_fresh = False
         if not otp_is_fresh:
-            request.session["otp_reauth_next"] = request.get_full_path()
-            request.session.modified = True
-            return redirect("users:login")
+            return redirect_to_login(request.get_full_path(), login_url=reverse("users:login"))
         return super().dispatch(request, *args, **kwargs)
+
+
+class LoginAndOTPRequiredMixin(LoginRequiredMixin, OTPRequiredMixin):
+    """Exige une session Django authentifiée et une vérification OTP récente."""
 
 
 class RoleRequiredMixin(OTPRequiredMixin):
@@ -32,7 +35,7 @@ class RoleRequiredMixin(OTPRequiredMixin):
 
     def dispatch(self, request, *args, **kwargs):
         if not request.user.is_authenticated:
-            return redirect_to_login(request.get_full_path())
+            return redirect_to_login(request.get_full_path(), login_url=reverse("users:login"))
         if request.user.role not in self.allowed_roles and not request.user.is_superuser:
             raise PermissionDenied
         return super().dispatch(request, *args, **kwargs)

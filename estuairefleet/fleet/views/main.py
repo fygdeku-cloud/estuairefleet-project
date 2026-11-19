@@ -1,7 +1,6 @@
-from django.contrib.auth.mixins import LoginRequiredMixin
 from django.views.generic import TemplateView
 
-from estuairefleet.users.permissions import AdminRequiredMixin, DriverRequiredMixin
+from estuairefleet.users.permissions import AdminRequiredMixin, DriverRequiredMixin, LoginAndOTPRequiredMixin
 
 from ..selectors import get_bus_for_chauffeur, get_buses_for_map, get_fleet_overview_counts, get_trajets_in_service
 
@@ -24,7 +23,7 @@ class MyBusView(DriverRequiredMixin, TemplateView):
         return context
 
 
-class NetworkView(LoginRequiredMixin, TemplateView):
+class NetworkView(LoginAndOTPRequiredMixin, TemplateView):
     template_name = "fleet/network_live.html"
 
     def get_context_data(self, **kwargs):
