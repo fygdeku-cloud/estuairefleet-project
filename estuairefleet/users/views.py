@@ -54,6 +54,17 @@ def _safe_next_url(request, candidate):
     return reverse("core:home")
 
 
+def _role_home_url(user):
+    """Retourne la page d’accueil adaptée au rôle du compte connecté."""
+    if user.is_superuser or user.role in {"admin", "administrator"}:
+        return reverse("core:dashboard")
+    if user.role == "driver":
+        return reverse("signals:driver_map")
+    if user.role == "staff":
+        return reverse("signals:monitor")
+    return reverse("signals:home")
+
+
 def _set_otp_verified(request):
     request.session[OTP_VERIFIED_SESSION_KEY] = int(timezone.now().timestamp())
     request.session.modified = True
@@ -101,7 +112,10 @@ class IdentifierLoginView(LoginView):
         self.request.session["login_user_id"] = str(user.pk)
         self.request.session.modified = True
         _begin_otp(
-            self.request, challenge=challenge, purpose=OTPPurpose.LOGIN, next_url=self.request.POST.get("next", "")
+            self.request,
+            challenge=challenge,
+            purpose=OTPPurpose.LOGIN,
+            next_url=self.request.POST.get("next") or self.request.GET.get("next", ""),
         )
         messages.info(self.request, "Un code de vérification vient d'être envoyé à votre adresse e-mail.")
         return redirect("users:otp_verify")
@@ -209,7 +223,7 @@ class OTPVerifyView(FormView):
             login(self.request, user, backend="estuairefleet.users.backends.IdentifierBackend")
             _set_otp_verified(self.request)
             self.request.session.pop(PENDING_OTP_SESSION_KEY, None)
-            return redirect(_safe_next_url(self.request, pending.get("next", "")))
+            return redirect(_safe_next_url(self.request, pending.get("next", "")) if pending.get("next") else _role_home_url(user))
         if purpose == OTPPurpose.SIGNUP:
             signup = self.request.session.pop(PENDING_SIGNUP_SESSION_KEY, None)
             self.request.session.pop(PENDING_OTP_SESSION_KEY, None)
@@ -227,7 +241,7 @@ class OTPVerifyView(FormView):
             login(self.request, user, backend="estuairefleet.users.backends.IdentifierBackend")
             _set_otp_verified(self.request)
             messages.success(self.request, "Votre compte a été créé. Votre espace est prêt.")
-            return redirect("core:home")
+            return redirect(_role_home_url(user))
         return redirect("users:login")
 
 
