@@ -45,6 +45,29 @@ def test_login_by_matricule_requires_and_accepts_otp(client, student):
 
 
 @pytest.mark.django_db
+@pytest.mark.parametrize(
+    ("role", "destination"),
+    [
+        ("student", "signals:home"),
+        ("driver", "signals:driver_map"),
+        ("admin", "core:dashboard"),
+        ("staff", "signals:monitor"),
+    ],
+)
+def test_login_otp_redirects_to_role_home(client, user_factory, role, destination):
+    user = user_factory(role=role, must_change_password=False)
+    response = client.post(
+        reverse("users:login"),
+        {"username": user.email, "password": "UneBonnePhraseDePasse!2026"},
+    )
+    assert response.url == reverse("users:otp_verify")
+    code = re.search(r"\b(\d{6})\b", mail.outbox[-1].body).group(1)
+    response = client.post(reverse("users:otp_verify"), {"code": code})
+    assert response.url == reverse(destination)
+    assert str(client.session["_auth_user_id"]) == str(user.pk)
+
+
+@pytest.mark.django_db
 def test_role_helpers_and_profiles_are_consistent(student, driver, admin_user, staff_user):
     assert student.user.role == UserRole.STUDENT
     assert driver.user.role == UserRole.DRIVER
